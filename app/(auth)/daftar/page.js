@@ -30,8 +30,8 @@ export default function DaftarPage() {
 
   if (sent) return (
     <AuthFrame title="Cek email kamu" subtitle={`Kami mengirim tautan konfirmasi ke ${f.email}.`}>
-      <div className="rounded-2xl border border-line bg-white p-5 text-sm text-muted">
-        <MailCheck className="mb-2 text-brand" />
+      <div className="rounded-xl border border-line p-5 text-sm text-sub">
+        <MailCheck size={20} className="mb-2 text-pos" />
         Buka tautan di email tersebut untuk mengaktifkan akun, lalu masuk dengan email &amp; password yang baru dibuat.
       </div>
       <Link href="/masuk/" className="btn-primary mt-5 w-full">Ke halaman masuk</Link>
@@ -39,33 +39,33 @@ export default function DaftarPage() {
   )
 
   return (
-    <AuthFrame title="Buat akun" subtitle="Gratis. Cukup empat isian.">
+    <AuthFrame title="Buat akun" subtitle="Gratis, kurang dari satu menit.">
       <form onSubmit={submit} className="space-y-4" noValidate>
         <div>
-          <label className="label" htmlFor="email">Email</label>
+          <label className="field-label" htmlFor="email">Email</label>
           <input id="email" type="email" className="input" autoComplete="email" placeholder="nama@email.com" value={f.email} onChange={set('email')} />
         </div>
         <div>
-          <label className="label" htmlFor="username">Username</label>
+          <label className="field-label" htmlFor="username">Username</label>
           <div className="relative">
-            <span className="absolute inset-y-0 left-3.5 flex items-center text-muted">@</span>
+            <span className="absolute inset-y-0 left-3.5 flex items-center text-sub">@</span>
             <input id="username" className="input pl-8" autoComplete="username" maxLength={20} placeholder="budi_santoso" value={f.username}
               onChange={(e) => setF({ ...f, username: e.target.value.replace(/\s/g, '') })} />
           </div>
-          <p className="mt-1 text-xs text-muted">3–20 karakter: huruf, angka, titik, garis bawah.</p>
+          <p className="mt-1 text-xs text-sub">3–20 karakter: huruf, angka, titik, garis bawah.</p>
         </div>
         <div>
-          <label className="label" htmlFor="password">Password</label>
+          <label className="field-label" htmlFor="password">Password</label>
           <PasswordInput id="password" value={f.password} onChange={set('password')} autoComplete="new-password" placeholder="Minimal 8 karakter" />
         </div>
         <div>
-          <label className="label" htmlFor="occupation">Status pekerjaan</label>
+          <label className="field-label" htmlFor="occupation">Status pekerjaan</label>
           <input id="occupation" className="input" maxLength={60} placeholder="mis. Karyawan swasta, Freelancer desain, Mahasiswa" value={f.occupation} onChange={set('occupation')} />
         </div>
         <ErrorText>{err}</ErrorText>
-        <button className="btn-primary w-full !py-3" disabled={busy}>{busy ? 'Mendaftarkan…' : 'Daftar'}</button>
+        <button className="btn-primary h-10 w-full" disabled={busy}>{busy ? 'Mendaftarkan…' : 'Daftar'}</button>
       </form>
-      <p className="mt-6 text-center text-sm text-muted">Sudah punya akun? <Link href="/masuk/" className="font-semibold text-brand hover:underline">Masuk</Link></p>
+      <p className="mt-6 text-center text-sm text-sub">Sudah punya akun? <Link href="/masuk/" className="font-medium text-ink underline decoration-edge underline-offset-4 hover:decoration-ink">Masuk</Link></p>
     </AuthFrame>
   )
 }

@@ -1,25 +1,50 @@
 'use client'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { Utensils, SquareParking, Briefcase, Coffee } from 'lucide-react'
 import { useAuth } from '@/app/providers'
 import Logo from './Logo'
-import { LocalModeNote, Spinner } from './ui'
-
-// Contoh isi buku kas untuk ilustrasi halaman masuk/daftar.
-const SAMPLE = [
-  ['01', 'Gaji bulanan', 7000000, 0],
-  ['03', 'Parkir minimarket', 0, 5000],
-  ['03', 'Kopi susu gula aren', 0, 22000],
-  ['05', 'Proyek logo (freelance)', 1250000, 0],
-  ['07', 'Setor tabungan', 0, 1000000],
-  ['09', 'Nasi padang', 0, 18000],
-]
-const fmt = (n) => (n ? n.toLocaleString('id-ID') : '')
+import { LocalModeNote, IconBubble } from './ui'
 
 export const nextPath = () => {
   if (typeof window === 'undefined') return '/'
   const n = new URLSearchParams(window.location.search).get('next') || '/'
   return n.startsWith('/') && !n.startsWith('//') && !n.startsWith('/masuk') && !n.startsWith('/daftar') ? n : '/'
+}
+
+// Cuplikan produk: dibuat dari komponen asli, bukan ilustrasi.
+const SAMPLE = [
+  [Briefcase, 'Gaji November', 'Gaji Bulanan · BCA', '+Rp 7.000.000', true],
+  [Coffee, 'Kopi susu', 'Kopi & Jajan · GoPay', '−Rp 22.000'],
+  [SquareParking, 'Parkir kantor', 'Parkir · Tunai', '−Rp 5.000'],
+  [Utensils, 'Makan siang', 'Makan & Minum · GoPay', '−Rp 25.000'],
+]
+const PATH = 'M0,70 L30,66 L60,68 L90,40 L120,44 L150,46 L180,30 L210,34 L240,36 L270,22 L300,26'
+
+function Preview() {
+  return (
+    <div className="w-full max-w-[420px] space-y-3" aria-hidden="true">
+      <div className="panel p-5 shadow-pop">
+        <p className="text-sm text-sub">Total saldo</p>
+        <p className="num mt-1 text-3xl font-semibold tracking-tight">Rp 17.050.000</p>
+        <p className="mt-1 text-sm text-sub"><span className="num font-medium text-pos">+Rp 1.240.000</span> dalam 30 hari terakhir</p>
+        <svg viewBox="0 0 300 80" className="mt-4 h-20 w-full" preserveAspectRatio="none">
+          <defs><linearGradient id="pv" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#0B7A57" stopOpacity=".14" /><stop offset="1" stopColor="#0B7A57" stopOpacity="0" /></linearGradient></defs>
+          <path d={`${PATH} L300,80 L0,80 Z`} fill="url(#pv)" />
+          <path d={PATH} fill="none" stroke="#0B7A57" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+        </svg>
+      </div>
+      <div className="panel overflow-hidden shadow-pop">
+        {SAMPLE.map(([Icon, t, s, a, pos]) => (
+          <div key={t} className="flex items-center gap-3 border-b border-line px-4 py-3 last:border-0">
+            <IconBubble icon={Icon} />
+            <span className="min-w-0 flex-1"><span className="block text-base font-medium">{t}</span><span className="block text-sm text-sub">{s}</span></span>
+            <span className={`num text-base font-medium ${pos ? 'text-pos' : ''}`}>{a}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export default function AuthFrame({ title, subtitle, children }) {
@@ -28,44 +53,26 @@ export default function AuthFrame({ title, subtitle, children }) {
   useEffect(() => { if (ready && user) router.replace(nextPath()) }, [ready, user, router])
 
   return (
-    <div className="grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
-      {/* Sampul buku kas: kain hijau, judul emas, halaman bergaris */}
-      <section className="relative hidden overflow-hidden p-12 text-[#F3E3B5] lg:flex lg:flex-col"
-        style={{ background: 'repeating-linear-gradient(45deg, #17402F 0 2px, #163C2D 2px 4px)' }}>
-        <div className="absolute inset-y-0 left-8 w-px bg-black/25 shadow-[1px_0_0_rgba(255,255,255,.06)]" />
-        <Logo light className="relative" />
-        <div className="relative mt-10 max-w-lg">
-          <p className="eyebrow !text-[#E0A400]/80">Buku kas pribadi</p>
-          <h2 className="mt-2 text-[2.6rem] font-semibold leading-[1.1] text-[#F6E7BD]">Tahu uangmu datang dari mana, dan pergi ke mana.</h2>
-        </div>
-        <div className="relative mt-auto max-w-lg -rotate-1 rounded-sm bg-sheet p-5 pt-4 text-ink shadow-[0_18px_40px_-12px_rgba(0,0,0,.55)]">
-          <div className="absolute inset-y-0 left-12 w-px bg-keluar/40" />
-          <p className="mb-2 flex justify-between pl-9 font-display text-sm font-semibold">November <span className="num text-xs font-normal text-muted">hal. 11</span></p>
-          <table className="w-full text-[13px]">
-            <thead><tr className="border-b-2 border-ink text-left text-[10px] uppercase tracking-[0.12em] text-muted"><th className="w-9 pb-1 font-semibold">Tgl</th><th className="pb-1 font-semibold">Keterangan</th><th className="pb-1 text-right font-semibold">Masuk</th><th className="pb-1 text-right font-semibold">Keluar</th></tr></thead>
-            <tbody>
-              {SAMPLE.map(([d, k, i, o], n) => (
-                <tr key={n} className="border-b border-line">
-                  <td className="num py-1.5 text-muted">{d}</td><td className="py-1.5">{k}</td>
-                  <td className="num py-1.5 text-right text-masuk-text">{fmt(i)}</td><td className="num py-1.5 text-right text-keluar-text">{fmt(o)}</td>
-                </tr>
-              ))}
-              <tr><td /><td className="pt-2 font-semibold">Sisa</td><td colSpan={2} className="pt-2 text-right"><span className="num total-rule font-semibold">7.205.000</span></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-      <section className="flex flex-col bg-paper px-5 py-8 sm:px-10">
-        <Logo className="lg:hidden" />
-        <div className="m-auto w-full max-w-sm py-10">
-          {!ready || user ? <Spinner /> : (
+    <div className="grid min-h-dvh lg:grid-cols-2">
+      <section className="flex flex-col px-6 py-6 sm:px-12">
+        <Logo />
+        <div className="m-auto w-full max-w-[360px] py-12">
+          {!ready || user ? <div className="h-64 animate-pulse rounded-xl bg-subtle" /> : (
             <>
-              <h1 className="text-[2.2rem] font-semibold leading-tight">{title}</h1>
-              <p className="mb-7 mt-1.5 text-muted">{subtitle}</p>
+              <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+              <p className="mb-8 mt-1.5 text-base text-sub">{subtitle}</p>
               {children}
-              {mode === 'local' && <LocalModeNote className="mt-6" />}
+              {mode === 'local' && <LocalModeNote className="mt-8" />}
             </>
           )}
+        </div>
+        <p className="text-xs text-faint">© {new Date().getFullYear()} MoneyOut</p>
+      </section>
+      <section className="hidden flex-col items-center justify-center gap-10 border-l border-line bg-subtle p-12 lg:flex">
+        <Preview />
+        <div className="max-w-[420px] text-center">
+          <p className="text-lg font-semibold tracking-tight">Semua uangmu, di satu tempat.</p>
+          <p className="mt-1.5 text-sm text-sub">Catat pemasukan, pengeluaran, simpanan, dan hutang. Pantau saldo tiap dompet dan dapatkan analisis otomatis setiap bulan.</p>
         </div>
       </section>
     </div>

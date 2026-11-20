@@ -13,28 +13,33 @@ MoneyOut meniru pola aplikasi keuangan pribadi yang sudah teruji puluhan tahun, 
 | **Cocokkan saldo** (rekonsiliasi) | Quicken, GnuCash | Tulis saldo nyata → selisih dicatat sebagai *Penyesuaian Saldo* (tidak dihitung di analisis) |
 | **Amplop anggaran** per kategori | YNAB (sejak 2004), metode amplop | Jatah bulanan per kategori, penanda "hari ini", sisa jatah per hari |
 | **Saran jatah harian, kalender belanja, multi-dompet** | Money Lover, Wallet | Kalender pengeluaran (klik tanggal untuk menyaring) |
-| **Isian cepat di baris register** | Quicken/GnuCash (ketik → Enter) | Baris isian di atas register (desktop) |
-| **"Jangan putuskan rantainya"** | teknik kebiasaan lama | Rantai mencatat 14 hari di dasbor |
+| **Grafik saldo dari waktu ke waktu** sebagai fokus utama | Mercury, Copilot, Wise | Dasbor & halaman dompet, dengan tooltip saat diarahkan |
+| **Pintasan keyboard** | Quicken/GnuCash, aplikasi profesional | `N` = catat transaksi, `Ctrl/⌘ + Enter` = simpan |
 
-Tampilan bergaya **buku kas**: kertas krem, tinta hijau/merah, angka monospace, garis dobel di bawah total
-(konvensi akuntansi), cap "LUNAS" untuk hutang yang selesai.
+### Prinsip tampilan
+- Satu tipe huruf (**Geist**) dengan angka tabular; skala ukuran tetap (12/13/14/15/17/20/24/30/38 px).
+- Latar netral putih/abu-abu; **hijau hanya untuk uang masuk**, merah/kuning hanya untuk peringatan.
+- Garis rambut dan ruang kosong untuk mengelompokkan, bukan kotak berwarna di mana-mana.
+- Tombol utama hitam; ikon kategori di lingkaran netral; teks singkat dan lugas.
+- Token desain ada di `tailwind.config.js` (`canvas`, `subtle`, `well`, `line`, `edge`, `ink`, `sub`, `faint`, `pos`, `neg`, `warn`)
+  dan kelas dasar di `app/globals.css` (`panel`, `btn-primary`, `btn-secondary`, `btn-ghost`, `input`, `field-label`, `num`).
 
 ## Menu
 | Menu | Isi |
 |---|---|
-| **Dasbor** | Neraca (saldo semua dompet + ringkasan bulan bergaris dobel), ke mana uang masuk pergi, rantai mencatat, Kata Data Analyst, jatuh tempo, kalender pengeluaran, amplop anggaran, catatan terakhir |
-| **Input Variable** | Daftar isi bab pencatatan: |
+| **Dasbor** | Total saldo + grafik saldo (30 hari–1 tahun), pemasukan/pengeluaran/simpanan bulan ini dibanding bulan lalu, transaksi terbaru, pengeluaran per kategori, perlu perhatian (jatuh tempo + risiko), anggaran |
+| **Input Variable** | Ringkasan keempat jenis catatan + semua transaksi: |
 | ↳ Pemasukan | Gaji bulanan, freelance / harian, bonus & THR, usaha, hasil investasi, dll. |
 | ↳ Pengeluaran | Kalender + amplop anggaran + register; kategori makan, kopi, parkir, transport, pakaian, tagihan, dll. |
 | ↳ Simpanan | Tabungan, dana darurat, investasi, emas, aset, deposito — plus total terkumpul per jenis |
-| ↳ Hutang & Piutang | Siapa meminjam berapa, jatuh tempo, cicilan, cap LUNAS |
-| **Data Analyst** | Memo kesimpulan bulanan, skor kesehatan (0–100), temuan, risiko, peluang, aturan 50/30/20, peringatan amplop |
+| ↳ Hutang & Piutang | Siapa meminjam berapa, jatuh tempo, progres cicilan, riwayat pembayaran |
+| **Data Analyst** | Ringkasan bulanan, skor kesehatan (0–100), hasil analisis yang bisa disaring (risiko / temuan / peluang), aturan 50/30/20, peringatan anggaran |
 | **Laporan** | Grafik & tabel arus uang per bulan dalam setahun, rincian per kategori, ekspor CSV |
-| **Dompet** (sidebar) | Saldo per dompet, register dengan saldo berjalan, pindah dompet, cocokkan saldo, tambah/ubah dompet |
+| **Dompet** (sidebar) | Saldo per dompet, grafik saldo, transaksi dengan saldo berjalan, pindah dompet, cocokkan saldo, tambah/ubah dompet |
 | **Profil** | Klik foto/nama di kiri bawah (HP: lingkaran di kanan atas) |
 
-Tombol **Catat** selalu ada (sidebar di desktop, tombol bulat di tengah bawah di HP) dengan tab Masuk / Keluar / Simpanan / Pindah.
-Kategori sendiri bisa ditambahkan langsung dari form catat (**+ Kategori baru**).
+Tombol **Catat transaksi** selalu ada (sidebar di desktop, tombol bulat di tengah bawah di HP; pintasan `N`) dengan pilihan
+Pengeluaran / Pemasukan / Simpanan / Pindah. Kategori sendiri bisa ditambahkan langsung dari form (**+ Baru**).
 
 ### Cara kerja Data Analyst
 Dihitung di browser dari catatan pengguna sendiri (`lib/insights.js`), tanpa layanan luar. Yang dibaca antara lain:
@@ -95,7 +100,8 @@ components/                   AppShell (menu), TxForm, TxPage, dll.
 lib/backend/                  supabase.js & local.js — antarmuka data yang sama
 lib/categories.js             daftar kategori bawaan
 lib/insights.js               mesin analisis Data Analyst
-lib/stats.js                  saldo dompet, register, amplop, rantai, kalender
-components/Register.js        register gaya buku cek + isian cepat
+lib/stats.js                  saldo dompet, deret saldo harian, register, anggaran, kalender
+components/Register.js        daftar transaksi per hari (+ saldo berjalan per dompet)
+components/BalanceChart.js    grafik saldo dengan tooltip
 supabase/moneyout.sql         skema database + RLS
 ```

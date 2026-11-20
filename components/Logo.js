@@ -1,26 +1,22 @@
 import Link from 'next/link'
 
-// Ikon koin emas bertuliskan "Rp".
-export function CoinMark({ className = 'h-8 w-8' }) {
+// Koin emas bertuliskan "Rp".
+export function CoinMark({ className = 'h-7 w-7' }) {
   return (
     <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
-      <circle cx="32" cy="32" r="31" fill="#C98500" />
-      <circle cx="32" cy="32" r="28.5" fill="#F2B705" />
-      <circle cx="32" cy="32" r="25.5" fill="none" stroke="#C98500" strokeWidth="1.6" strokeDasharray="2 2.4" />
-      <circle cx="32" cy="32" r="21" fill="#FFD34D" />
-      <path d="M17 26a17 17 0 0 1 14-11" fill="none" stroke="#FFF3C4" strokeWidth="3" strokeLinecap="round" />
-      <text x="32" y="40.5" textAnchor="middle" fontFamily="'Plus Jakarta Sans',Arial,sans-serif" fontWeight="800" fontSize="21" fill="#7A4A00">Rp</text>
+      <circle cx="32" cy="32" r="30" fill="#D99A06" />
+      <circle cx="32" cy="32" r="26" fill="#F4B71E" />
+      <circle cx="32" cy="32" r="22" fill="none" stroke="#C78A00" strokeWidth="1.5" opacity=".7" />
+      <text x="32" y="40" textAnchor="middle" fontFamily="Geist,Arial,sans-serif" fontWeight="700" fontSize="20" letterSpacing="-.5" fill="#5C3D00">Rp</text>
     </svg>
   )
 }
 
-export default function Logo({ className = '', light = false }) {
+export default function Logo({ className = '' }) {
   return (
-    <Link href="/" className={`flex items-center gap-2 ${className}`}>
+    <Link href="/" className={`inline-flex items-center gap-2 ${className}`} aria-label="MoneyOut, ke ringkasan">
       <CoinMark />
-      <span className={`font-display text-xl font-semibold tracking-tight ${light ? 'text-[#F6E7BD]' : ''}`}>
-        Money<span className={light ? 'text-[#E0A400]' : 'text-brand'}>Out</span>
-      </span>
+      <span className="text-md font-semibold tracking-tight">MoneyOut</span>
     </Link>
   )
 }

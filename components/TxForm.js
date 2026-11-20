@@ -1,16 +1,16 @@
 'use client'
 import { useState } from 'react'
-import { Trash2, Plus, Check, ArrowRightLeft } from 'lucide-react'
-import { Modal, ErrorText } from './ui'
+import { Plus } from 'lucide-react'
+import { Modal, ErrorText, Segmented } from './ui'
 import AmountInput from './AmountInput'
-import AccountPicker from './AccountPicker'
+import AccountSelect from './AccountPicker'
 import { useData } from './DataProvider'
-import { KINDS, TONE, categoriesFor } from '@/lib/categories'
+import { KINDS, categoriesFor } from '@/lib/categories'
 import { todayISO } from '@/lib/format'
 
-const TABS = [
-  { value: 'pemasukan', label: 'Masuk' },
-  { value: 'pengeluaran', label: 'Keluar' },
+const TYPES = [
+  { value: 'pengeluaran', label: 'Pengeluaran' },
+  { value: 'pemasukan', label: 'Pemasukan' },
   { value: 'simpanan', label: 'Simpanan' },
   { value: 'transfer', label: 'Pindah' },
 ]
@@ -37,7 +37,6 @@ export default function TxForm({ initial, onClose }) {
   const isTransfer = kind === 'transfer'
   const meta = KINDS[kind]
   const cats = isTransfer ? [] : categoriesFor(kind, categories)
-  const tone = meta ? TONE[meta.tone] : null
 
   async function submit(e) {
     e?.preventDefault()
@@ -71,79 +70,62 @@ export default function TxForm({ initial, onClose }) {
     try { await remove(tr ? 'transfers' : 'transactions', (tx || tr).id); onClose() } catch (e2) { setErr(e2.message); setBusy(false) }
   }
 
-  const title = editing ? (isTransfer ? 'Ubah pindah dompet' : `Ubah ${meta.label.toLowerCase()}`) : 'Catat'
   return (
-    <Modal open onClose={onClose} title={title}
+    <Modal open onClose={onClose} title={editing ? 'Ubah transaksi' : 'Transaksi baru'}
       footer={<>
-        {editing && <button type="button" className="btn-danger mr-auto" onClick={del} disabled={busy}><Trash2 size={16} /> {confirmDel ? 'Yakin hapus?' : 'Hapus'}</button>}
-        <button type="button" className="btn-ghost" onClick={onClose}>Batal</button>
+        {editing && <button type="button" className="btn-danger mr-auto" onClick={del} disabled={busy}>{confirmDel ? 'Klik lagi untuk hapus' : 'Hapus'}</button>}
+        <button type="button" className="btn-secondary" onClick={onClose}>Batal</button>
         <button type="submit" form="tx-form" className="btn-primary" disabled={busy}>{busy ? 'Menyimpan…' : 'Simpan'}</button>
       </>}>
-      <form id="tx-form" onSubmit={submit} className="space-y-5">
-        {!editing && (
-          <div className="grid grid-cols-4 border-b border-line" role="tablist">
-            {TABS.map((t) => (
-              <button type="button" role="tab" key={t.value} aria-selected={kind === t.value} onClick={() => { setKind(t.value); setCategory(''); setErr('') }}
-                className={`-mb-px border-b-2 pb-2 text-sm font-semibold transition ${kind === t.value ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink'}`}>
-                {t.label}
-              </button>
-            ))}
-          </div>
-        )}
-        <div>
-          <label className="eyebrow mb-1 block" htmlFor="amount">{isTransfer ? 'Nominal dipindah' : `Nominal ${meta.label.toLowerCase()}`}</label>
-          <AmountInput value={amount} onChange={setAmount} autoFocus={!editing} tone={tone ? tone.text : 'text-ink'} />
-        </div>
+      <form id="tx-form" onSubmit={submit} onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(e) }} className="space-y-6">
+        {!editing && <Segmented className="flex w-full" value={kind} onChange={(k) => { setKind(k); setCategory(''); setErr('') }} options={TYPES} />}
+
+        <div className="py-2"><AmountInput value={amount} onChange={setAmount} autoFocus={!editing} /></div>
 
         {isTransfer ? (
-          <div className="space-y-4">
-            <AccountPicker label="Dari dompet" accounts={balances} value={account} onChange={(v) => { setAccount(v); if (v === toAccount) setToAccount(balances.find((a) => a.id !== v)?.id) }} />
-            <div className="flex items-center gap-2 text-muted"><ArrowRightLeft size={16} /><span className="h-px flex-1 bg-line" /></div>
-            {balances.length > 1
-              ? <AccountPicker label="Ke dompet" accounts={balances} value={toAccount} onChange={setToAccount} exclude={account} />
-              : <p className="rounded-md border border-dashed border-rule p-3 text-sm text-muted">Butuh minimal 2 dompet. Tambahkan dompet baru (mis. rekening bank atau e-wallet) dari menu samping.</p>}
-          </div>
+          balances.length > 1 ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <AccountSelect id="from" label="Dari" accounts={balances} value={account} onChange={(v) => { setAccount(v); if (v === toAccount) setToAccount(balances.find((a) => a.id !== v)?.id) }} />
+              <AccountSelect id="to" label="Ke" accounts={balances} value={toAccount} onChange={setToAccount} exclude={account} />
+            </div>
+          ) : <p className="rounded-lg bg-subtle p-3 text-sm text-sub">Pindah dompet butuh minimal dua dompet. Tambahkan dompet lewat tombol + di bagian Dompet pada menu samping.</p>
         ) : (
           <>
-            <div>
-              <span className="eyebrow mb-2 block">Kategori</span>
+            <fieldset>
+              <legend className="field-label">Kategori</legend>
               <div className="flex flex-wrap gap-1.5">
                 {cats.map((c) => {
                   const on = category === c.name
-                  const Icon = c.icon
                   return (
                     <button type="button" key={c.name} onClick={() => setCategory(c.name)} aria-pressed={on}
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition ${on ? `border-transparent font-semibold ring-2 ${tone.ring} ${tone.bg} ${tone.text}` : 'border-rule hover:border-ink/50'}`}>
-                      <Icon size={15} className={on ? '' : 'text-muted'} /> {c.name}
+                      className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm transition ${on ? 'border-ink bg-ink text-white' : 'border-line text-ink hover:border-edge hover:bg-subtle'}`}>
+                      <c.icon size={14} strokeWidth={1.8} className={on ? '' : 'text-sub'} /> {c.name}
                     </button>
                   )
                 })}
-                {newCat === null && (
-                  <button type="button" onClick={() => setNewCat('')} className="inline-flex items-center gap-1 rounded-full border border-dashed border-rule px-3 py-1.5 text-sm text-muted hover:border-ink hover:text-ink">
-                    <Plus size={15} /> Kategori baru
-                  </button>
+                {newCat === null ? (
+                  <button type="button" onClick={() => setNewCat('')} className="inline-flex h-8 items-center gap-1 rounded-full border border-dashed border-edge px-3 text-sm text-sub hover:text-ink"><Plus size={14} /> Baru</button>
+                ) : (
+                  <span className="inline-flex h-8 items-center gap-1 rounded-full border border-ink pl-3 pr-1">
+                    <input autoFocus className="w-36 bg-transparent text-sm outline-none" maxLength={40} placeholder="Nama kategori" value={newCat}
+                      onChange={(e) => setNewCat(e.target.value)} onBlur={addCategory}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCategory() } if (e.key === 'Escape') { e.stopPropagation(); setNewCat(null) } }} />
+                  </span>
                 )}
               </div>
-              {newCat !== null && (
-                <div className="mt-2 flex gap-2">
-                  <input autoFocus className="input !py-2" maxLength={40} placeholder="Nama kategori baru, mis. Cicilan motor" value={newCat}
-                    onChange={(e) => setNewCat(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCategory() } if (e.key === 'Escape') { e.stopPropagation(); setNewCat(null) } }} />
-                  <button type="button" className="btn-primary !px-3" onClick={addCategory} aria-label="Simpan kategori"><Check size={18} /></button>
-                </div>
-              )}
-            </div>
-            {balances.length > 0 && <AccountPicker label={kind === 'pemasukan' ? 'Masuk ke dompet' : 'Dibayar dari dompet'} accounts={balances} value={account} onChange={setAccount} />}
+            </fieldset>
+            {balances.length > 0 && <AccountSelect id="acc" label={kind === 'pemasukan' ? 'Masuk ke' : 'Dibayar dari'} accounts={balances} value={account} onChange={setAccount} />}
           </>
         )}
 
-        <div className="grid gap-4 sm:grid-cols-[11rem_1fr]">
+        <div className="grid gap-4 sm:grid-cols-[10rem_1fr]">
           <div>
-            <label className="label" htmlFor="tx-date">Tanggal</label>
+            <label className="field-label" htmlFor="tx-date">Tanggal</label>
             <input id="tx-date" type="date" className="input" value={date} max="2100-12-31" onChange={(e) => setDate(e.target.value)} />
           </div>
           <div>
-            <label className="label" htmlFor="tx-note">Keterangan <span className="font-normal text-muted">(opsional)</span></label>
-            <input id="tx-note" className="input" maxLength={200} placeholder={isTransfer ? 'mis. Tarik tunai ATM' : meta.placeholder} value={note} onChange={(e) => setNote(e.target.value)} />
+            <label className="field-label" htmlFor="tx-note">Catatan</label>
+            <input id="tx-note" className="input" maxLength={200} placeholder={isTransfer ? 'Tarik tunai, top up…' : meta.placeholder.replace(/^mis\. /, '')} value={note} onChange={(e) => setNote(e.target.value)} />
           </div>
         </div>
         <ErrorText>{err}</ErrorText>

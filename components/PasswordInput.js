@@ -8,7 +8,7 @@ export default function PasswordInput({ id, value, onChange, autoComplete, place
     <div className="relative">
       <input id={id} type={show ? 'text' : 'password'} className="input pr-11" required value={value} autoComplete={autoComplete}
         placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
-      <button type="button" onClick={() => setShow(!show)} className="absolute inset-y-0 right-0 px-3 text-muted hover:text-ink" aria-label={show ? 'Sembunyikan password' : 'Tampilkan password'}>
+      <button type="button" onClick={() => setShow(!show)} className="absolute inset-y-0 right-0 px-3 text-faint hover:text-ink" aria-label={show ? 'Sembunyikan password' : 'Tampilkan password'}>
         {show ? <EyeOff size={18} /> : <Eye size={18} />}
       </button>
     </div>

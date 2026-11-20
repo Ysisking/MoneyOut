@@ -20,20 +20,20 @@ export default function MasukPage() {
   }
 
   return (
-    <AuthFrame title="Masuk" subtitle="Lanjutkan mencatat keuanganmu.">
+    <AuthFrame title="Masuk ke MoneyOut" subtitle="Selamat datang kembali.">
       <form onSubmit={submit} className="space-y-4">
         <div>
-          <label className="label" htmlFor="email">Email</label>
+          <label className="field-label" htmlFor="email">Email</label>
           <input id="email" type="email" className="input" required autoComplete="email" placeholder="nama@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
         </div>
         <div>
-          <label className="label" htmlFor="password">Password</label>
+          <label className="field-label" htmlFor="password">Password</label>
           <PasswordInput id="password" value={password} onChange={setPassword} autoComplete="current-password" />
         </div>
         <ErrorText>{err}</ErrorText>
-        <button className="btn-primary w-full !py-3" disabled={busy}>{busy ? 'Memeriksa…' : 'Masuk'}</button>
+        <button className="btn-primary h-10 w-full" disabled={busy}>{busy ? 'Memeriksa…' : 'Masuk'}</button>
       </form>
-      <p className="mt-6 text-center text-sm text-muted">Belum punya akun? <Link href="/daftar/" className="font-semibold text-brand hover:underline">Daftar gratis</Link></p>
+      <p className="mt-6 text-center text-sm text-sub">Belum punya akun? <Link href="/daftar/" className="font-medium text-ink underline decoration-edge underline-offset-4 hover:decoration-ink">Daftar gratis</Link></p>
     </AuthFrame>
   )
 }

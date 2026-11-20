@@ -6,7 +6,6 @@ import { categoriesFor } from '@/lib/categories'
 import { rupiah, formatAmountInput, parseAmount, thisMonth, shiftMonth } from '@/lib/format'
 import { byCategory, ofKind, inMonth } from '@/lib/stats'
 
-// Metode amplop: tentukan batas belanja bulanan per kategori.
 export default function BudgetForm({ onClose }) {
   const { categories, budgets, transactions, save, remove } = useData()
   const cats = categoriesFor('pengeluaran', categories)
@@ -31,27 +30,29 @@ export default function BudgetForm({ onClose }) {
   }
 
   return (
-    <Modal open wide onClose={onClose} title="Atur anggaran bulanan"
+    <Modal open wide onClose={onClose} title="Anggaran bulanan" description="Isi batas belanja untuk kategori yang ingin diawasi. Kosongkan yang tidak perlu."
       footer={<>
-        <p className="mr-auto text-sm">Total <b className="num total-rule">{rupiah(sum)}</b> / bulan</p>
-        <button type="button" className="btn-ghost" onClick={onClose}>Batal</button>
-        <button form="budget-form" className="btn-primary" disabled={busy}>{busy ? 'Menyimpan…' : 'Simpan anggaran'}</button>
+        <p className="mr-auto text-sm text-sub">Total <span className="num font-medium text-ink">{rupiah(sum)}</span> per bulan</p>
+        <button type="button" className="btn-secondary" onClick={onClose}>Batal</button>
+        <button form="budget-form" className="btn-primary" disabled={busy}>{busy ? 'Menyimpan…' : 'Simpan'}</button>
       </>}>
       <form id="budget-form" onSubmit={submit}>
-        <p className="mb-4 text-sm text-muted">Isi batas belanja per bulan untuk kategori yang ingin diawasi — seperti membagi uang ke beberapa amplop. Kosongkan bila tidak perlu.</p>
-        <ul className="divide-y divide-line border-y border-line">
+        <div className="grid grid-cols-[1fr_auto] items-center gap-x-4 border-b border-line pb-2 text-xs font-medium text-faint"><span>Kategori</span><span className="w-40 text-right">Batas per bulan</span></div>
+        <ul className="divide-y divide-line">
           {cats.map((c) => {
             const prev = last.find((l) => l.name === c.name)?.amount
             return (
-              <li key={c.name} className="flex items-center gap-3 py-2">
-                <c.icon size={17} className="shrink-0 text-muted" />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-medium">{c.name}</span>
-                  {prev ? <button type="button" onClick={() => setVals({ ...vals, [c.name]: Math.ceil(prev / 10000) * 10000 })} className="num text-[11px] text-muted underline decoration-dotted underline-offset-2 hover:text-ink" title="Pakai angka bulan lalu">bulan lalu {rupiah(prev)}</button> : <span className="block text-[11px] text-muted/70">belum ada data</span>}
+              <li key={c.name} className="grid grid-cols-[1fr_auto] items-center gap-x-4 py-2.5">
+                <span className="flex min-w-0 items-center gap-2.5">
+                  <c.icon size={16} strokeWidth={1.8} className="shrink-0 text-sub" />
+                  <span className="min-w-0">
+                    <span className="block truncate text-base">{c.name}</span>
+                    {prev ? <button type="button" onClick={() => setVals({ ...vals, [c.name]: Math.ceil(prev / 10000) * 10000 })} className="num text-xs text-sub hover:text-ink hover:underline">Bulan lalu {rupiah(prev)}</button> : null}
+                  </span>
                 </span>
-                <span className="flex w-36 items-baseline gap-1 border-b border-rule focus-within:border-ink">
-                  <span className="text-xs text-muted">Rp</span>
-                  <input inputMode="numeric" aria-label={`Anggaran ${c.name}`} placeholder="—" className="num w-full bg-transparent py-1 text-right text-sm outline-none"
+                <span className="flex h-9 w-40 items-center rounded-lg border border-edge px-2.5 focus-within:border-ink">
+                  <span className="text-sm text-faint">Rp</span>
+                  <input inputMode="numeric" aria-label={`Batas ${c.name}`} placeholder="0" className="num w-full bg-transparent text-right text-base outline-none placeholder:text-[#CFCFCA]"
                     value={formatAmountInput(vals[c.name])} onChange={(e) => setVals({ ...vals, [c.name]: parseAmount(e.target.value) })} />
                 </span>
               </li>

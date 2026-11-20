@@ -1,60 +1,73 @@
 'use client'
 import { useMemo, useState } from 'react'
-import { Plus, HandCoins, Pencil, Trash2, CircleCheck, CalendarClock, ChevronDown } from 'lucide-react'
+import { Plus, HandCoins, Pencil, Trash2, ChevronDown, Check } from 'lucide-react'
 import { useData } from '@/components/DataProvider'
-import { Modal, Segmented, EmptyState, ErrorText, PageHeader } from '@/components/ui'
+import { Modal, Segmented, EmptyState, ErrorText, PageHeader, Progress } from '@/components/ui'
 import AmountInput from '@/components/AmountInput'
 import { rupiah, todayISO, dateShort, daysUntil } from '@/lib/format'
 import { debtInfo } from '@/lib/stats'
 
 const KIND = {
-  hutang: { label: 'Hutang', who: 'Pemberi pinjaman', desc: 'Uang yang saya pinjam dari orang lain', pay: 'Catat pembayaran', placeholder: 'mis. Mas Andi, Koperasi kantor' },
-  piutang: { label: 'Piutang', who: 'Peminjam', desc: 'Uang saya yang dipinjam orang lain', pay: 'Catat uang kembali', placeholder: 'mis. Rina, teman kos' },
+  hutang: { label: 'Hutang', tab: 'Hutang saya', who: 'Pemberi pinjaman', desc: 'Uang yang kamu pinjam', pay: 'Catat pembayaran', placeholder: 'Mas Andi, koperasi kantor' },
+  piutang: { label: 'Piutang', tab: 'Piutang saya', who: 'Peminjam', desc: 'Uangmu yang dipinjam orang lain', pay: 'Catat uang kembali', placeholder: 'Rina, teman kos' },
+}
+
+function dueText(d, done) {
+  if (done) return { t: 'Lunas', c: 'text-pos' }
+  if (!d.due_date) return { t: 'Tanpa jatuh tempo', c: 'text-faint' }
+  const n = daysUntil(d.due_date)
+  if (n < 0) return { t: `Lewat ${-n} hari`, c: 'text-neg font-medium' }
+  if (n === 0) return { t: 'Jatuh tempo hari ini', c: 'text-warn font-medium' }
+  if (n <= 7) return { t: `${n} hari lagi`, c: 'text-warn' }
+  return { t: `Jatuh tempo ${dateShort(d.due_date)}`, c: 'text-sub' }
 }
 
 export default function HutangPiutang() {
   const { debts, payments } = useData()
   const [tab, setTab] = useState('hutang')
   const [status, setStatus] = useState('aktif')
-  const [form, setForm] = useState(null)   // { debt? }
-  const [payFor, setPayFor] = useState(null) // { debt, remaining }
+  const [form, setForm] = useState(null)
+  const [payFor, setPayFor] = useState(null)
 
   const rows = useMemo(() => debts.map((d) => ({ d, ...debtInfo(d, payments) })), [debts, payments])
-  const sum = (kind) => rows.filter((r) => r.d.kind === kind).reduce((s, r) => s + r.remaining, 0)
+  const active = (k) => rows.filter((r) => r.d.kind === k && !r.done)
+  const sum = (k) => active(k).reduce((s, r) => s + r.remaining, 0)
   const list = rows
     .filter((r) => r.d.kind === tab && (status === 'semua' || (status === 'lunas' ? r.done : !r.done)))
     .sort((a, b) => (a.done - b.done) || (a.d.due_date || '9999').localeCompare(b.d.due_date || '9999') || b.d.date.localeCompare(a.d.date))
 
   return (
     <div>
-      <PageHeader eyebrow="Input Variable" title="Hutang & Piutang" desc="Catat siapa meminjam berapa, kapan jatuh tempo, dan cicilannya."
-        action={<button className="btn-primary" onClick={() => setForm({})}><Plus size={18} /> Catat baru</button>} />
+      <PageHeader title="Hutang & Piutang" desc="Catat pinjaman, jatuh tempo, dan cicilannya."
+        action={<button className="btn-primary" onClick={() => setForm({ kind: tab })}><Plus size={16} /> Catat baru</button>} />
 
-      <div className="mb-5 grid gap-3 sm:grid-cols-2">
+      <div className="panel mb-6 grid grid-cols-2 divide-x divide-line">
         {['hutang', 'piutang'].map((k) => (
-          <button key={k} onClick={() => setTab(k)} className={`card p-4 text-left transition ${tab === k ? 'border-ink ring-1 ring-ink' : 'hover:border-ink/40'}`}>
-            <p className="text-sm text-muted">{KIND[k].label} belum lunas</p>
-            <p className={`num mt-0.5 text-2xl font-semibold ${k === 'hutang' ? 'text-keluar-text' : 'text-utang-text'}`}>{rupiah(sum(k))}</p>
-            <p className="mt-1 text-xs text-muted">{KIND[k].desc}</p>
+          <button key={k} onClick={() => setTab(k)} className="px-5 py-4 text-left transition-colors hover:bg-subtle">
+            <p className="text-sm text-sub">{k === 'hutang' ? 'Hutang belum lunas' : 'Piutang belum kembali'}</p>
+            <p className="num mt-1 text-xl font-semibold tracking-tight">{rupiah(sum(k))}</p>
+            <p className="mt-0.5 text-xs text-faint">{active(k).length} catatan aktif</p>
           </button>
         ))}
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <Segmented className="w-full sm:w-auto" value={tab} onChange={setTab} options={[{ value: 'hutang', label: 'Hutang saya' }, { value: 'piutang', label: 'Piutang saya' }]} />
-        <Segmented className="w-full sm:w-auto" value={status} onChange={setStatus} options={[{ value: 'aktif', label: 'Belum lunas' }, { value: 'lunas', label: 'Lunas' }, { value: 'semua', label: 'Semua' }]} />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <Segmented value={tab} onChange={setTab} options={['hutang', 'piutang'].map((k) => ({ value: k, label: KIND[k].tab, count: active(k).length }))} />
+        <select className="input h-9 w-auto" value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Status">
+          <option value="aktif">Belum lunas</option><option value="lunas">Lunas</option><option value="semua">Semua</option>
+        </select>
       </div>
 
-      {list.length ? (
-        <div className="grid gap-3 md:grid-cols-2">
-          {list.map((r) => <DebtCard key={r.d.id} r={r} onEdit={() => setForm({ debt: r.d })} onPay={() => setPayFor(r)} />)}
-        </div>
-      ) : (
-        <div className="card">
-          <EmptyState icon={HandCoins} title={`Tidak ada ${KIND[tab].label.toLowerCase()} ${status === 'lunas' ? 'yang lunas' : status === 'aktif' ? 'yang aktif' : ''}`}
-            text={KIND[tab].desc + '.'} action={<button className="btn-primary" onClick={() => setForm({ kind: tab })}><Plus size={16} /> Catat {KIND[tab].label.toLowerCase()}</button>} />
-        </div>
-      )}
+      <section className="panel overflow-hidden">
+        {list.length ? (
+          <ul className="divide-y divide-line">
+            {list.map((r) => <DebtRow key={r.d.id} r={r} onEdit={() => setForm({ debt: r.d })} onPay={() => setPayFor(r)} />)}
+          </ul>
+        ) : (
+          <EmptyState icon={HandCoins} title={status === 'lunas' ? 'Belum ada yang lunas' : `Tidak ada ${KIND[tab].label.toLowerCase()} aktif`} text={`${KIND[tab].desc}.`}
+            action={<button className="btn-secondary" onClick={() => setForm({ kind: tab })}><Plus size={15} /> Catat {KIND[tab].label.toLowerCase()}</button>} />
+        )}
+      </section>
 
       {form && <DebtForm init={form} defaultKind={tab} onClose={() => setForm(null)} />}
       {payFor && <PaymentForm r={payFor} onClose={() => setPayFor(null)} />}
@@ -62,54 +75,45 @@ export default function HutangPiutang() {
   )
 }
 
-function DebtCard({ r, onEdit, onPay }) {
+function DebtRow({ r, onEdit, onPay }) {
   const { remove } = useData()
   const [open, setOpen] = useState(false)
   const { d, paid, remaining, done, progress } = r
-  const n = d.due_date ? daysUntil(d.due_date) : null
+  const due = dueText(d, done)
   return (
-    <div className={`card relative overflow-hidden p-4 ${done ? 'bg-canvas' : ''}`}>
-      {done && <span className="stamp absolute right-5 top-5 border-masuk-text text-masuk-text opacity-85">Lunas</span>}
-      <div className="flex items-start gap-3">
-        <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 font-display text-sm font-semibold uppercase ${d.kind === 'hutang' ? 'border-keluar-text text-keluar-text' : 'border-utang-text text-utang-text'}`}>{d.person.slice(0, 2)}</div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-display text-lg font-semibold leading-tight">{d.person}</p>
-          <p className="truncate text-xs text-muted">{dateShort(d.date)}{d.note ? ` · ${d.note}` : ''}</p>
+    <li>
+      <div className="grid grid-flow-dense grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3 px-5 py-4 md:grid-flow-row md:grid-cols-[2.25rem_minmax(0,1fr)_13rem_8.5rem_7.5rem]">
+        <span className="grid h-9 w-9 place-items-center rounded-full bg-subtle text-xs font-semibold uppercase">{done ? <Check size={15} className="text-pos" /> : d.person.slice(0, 2)}</span>
+        <div className="min-w-0">
+          <p className={`truncate text-base font-medium ${done ? 'text-sub' : ''}`}>{d.person}</p>
+          <p className="truncate text-sm"><span className={due.c}>{due.t}</span>{d.note && <span className="text-sub"> · {d.note}</span>}</p>
         </div>
-        {!done && n !== null && (
-          <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${n < 0 ? 'bg-red-50 text-red-700' : n <= 7 ? 'bg-utang-soft text-utang-text' : 'bg-canvas text-muted'}`}>
-            <CalendarClock size={13} /> {n < 0 ? `Lewat ${-n} hari` : n === 0 ? 'Hari ini' : dateShort(d.due_date)}
-          </span>
-        )}
-      </div>
-      <div className="mt-4 flex items-end justify-between text-sm">
-        <div><p className="eyebrow">Sisa</p><p className="num text-xl font-semibold">{rupiah(remaining)}</p></div>
-        <p className="num text-right text-xs text-muted">Dibayar {rupiah(paid)}<br />dari {rupiah(d.amount)}</p>
-      </div>
-      <div className="mt-2 h-2 overflow-hidden rounded-sm bg-canvas ring-1 ring-inset ring-line" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100}>
-        <div className="grow-x h-2 bg-masuk-text" style={{ width: `${progress * 100}%` }} />
-      </div>
-      <div className="mt-4 flex flex-wrap gap-2">
-        {!done && <button className="btn-primary !px-3 !py-2" onClick={onPay}>{KIND[d.kind].pay}</button>}
-        <button className="btn-ghost !px-3 !py-2" onClick={onEdit} aria-label="Ubah"><Pencil size={15} /> Ubah</button>
-        {r.payments.length > 0 && (
-          <button className="btn-ghost ml-auto !px-3 !py-2" onClick={() => setOpen(!open)} aria-expanded={open}>
-            {r.payments.length} pembayaran <ChevronDown size={15} className={open ? 'rotate-180' : ''} />
-          </button>
-        )}
+        <div className="col-span-2 col-start-2 md:col-span-1 md:col-start-auto">
+          <Progress value={progress} color={done ? '#0B7A57' : '#111'} />
+          <p className="num mt-1.5 whitespace-nowrap text-xs text-sub">{Math.round(progress * 100)}% · {rupiah(paid)} dari {rupiah(d.amount)}</p>
+        </div>
+        <div className="text-right">
+          <p className="num text-base font-medium">{rupiah(remaining)}</p>
+          <p className="text-xs text-faint">sisa</p>
+        </div>
+        <div className="col-span-2 col-start-2 flex items-center gap-1 md:col-span-1 md:col-start-auto md:justify-end">
+          {!done && <button className="btn-secondary h-8 px-3" onClick={onPay}>{d.kind === 'hutang' ? 'Bayar' : 'Terima'}</button>}
+          <button className="btn-ghost h-8 w-8 px-0" onClick={onEdit} aria-label="Ubah" title="Ubah"><Pencil size={15} /></button>
+          <button className="btn-ghost h-8 w-8 px-0" onClick={() => setOpen(!open)} aria-expanded={open} aria-label="Riwayat pembayaran" title="Riwayat pembayaran" disabled={!r.payments.length}><ChevronDown size={16} className={open ? 'rotate-180' : ''} /></button>
+        </div>
       </div>
       {open && (
-        <ul className="mt-3 divide-y divide-line border-y border-line text-sm">
+        <ul className="mx-5 mb-4 divide-y divide-line rounded-lg bg-subtle text-sm">
           {r.payments.map((p) => (
-            <li key={p.id} className="flex items-center gap-2 px-3 py-2">
-              <span className="flex-1 text-muted">{dateShort(p.date)}{p.note ? ` · ${p.note}` : ''}</span>
-              <span className="num">{rupiah(p.amount)}</span>
-              <button onClick={() => confirm('Hapus pembayaran ini?') && remove('payments', p.id)} className="rounded p-1 text-muted hover:text-red-700" aria-label="Hapus pembayaran"><Trash2 size={14} /></button>
+            <li key={p.id} className="flex items-center gap-3 px-3.5 py-2">
+              <span className="flex-1 text-sub">{dateShort(p.date)}{p.note && ` · ${p.note}`}</span>
+              <span className="num font-medium">{rupiah(p.amount)}</span>
+              <button onClick={() => confirm('Hapus pembayaran ini?') && remove('payments', p.id)} className="rounded p-1 text-faint hover:text-neg" aria-label="Hapus pembayaran"><Trash2 size={14} /></button>
             </li>
           ))}
         </ul>
       )}
-    </div>
+    </li>
   )
 }
 
@@ -144,30 +148,21 @@ function DebtForm({ init, defaultKind, onClose }) {
   }
 
   return (
-    <Modal open onClose={onClose} title={d ? `Ubah ${KIND[kind].label.toLowerCase()}` : 'Catat hutang / piutang'}
+    <Modal open onClose={onClose} title={d ? `Ubah ${KIND[kind].label.toLowerCase()}` : 'Hutang atau piutang baru'}
       footer={<>
-        {d && <button className="btn-danger mr-auto" onClick={del} disabled={busy}><Trash2 size={16} /> {confirmDel ? 'Yakin hapus?' : 'Hapus'}</button>}
-        <button className="btn-ghost" onClick={onClose}>Batal</button>
+        {d && <button className="btn-danger mr-auto" onClick={del} disabled={busy}>{confirmDel ? 'Klik lagi untuk hapus' : 'Hapus'}</button>}
+        <button className="btn-secondary" onClick={onClose}>Batal</button>
         <button form="debt-form" className="btn-primary" disabled={busy}>{busy ? 'Menyimpan…' : 'Simpan'}</button>
       </>}>
-      <form id="debt-form" onSubmit={submit} className="space-y-4">
-        <div>
-          <Segmented className="w-full" value={kind} onChange={setKind} options={[{ value: 'hutang', label: 'Saya berhutang' }, { value: 'piutang', label: 'Orang berhutang ke saya' }]} />
-          <p className="mt-1.5 text-xs text-muted">{KIND[kind].desc}.</p>
-        </div>
-        <div>
-          <label className="label" htmlFor="person">{KIND[kind].who}</label>
-          <input id="person" className="input" maxLength={60} placeholder={KIND[kind].placeholder} value={person} onChange={(e) => setPerson(e.target.value)} />
-        </div>
-        <div>
-          <label className="label" htmlFor="amount">Jumlah pinjaman</label>
-          <AmountInput value={amount} onChange={setAmount} quick={false} />
-        </div>
+      <form id="debt-form" onSubmit={submit} className="space-y-5">
+        <Segmented className="flex w-full" value={kind} onChange={setKind} options={[{ value: 'hutang', label: 'Saya meminjam' }, { value: 'piutang', label: 'Saya meminjamkan' }]} />
+        <div><label className="field-label" htmlFor="person">{KIND[kind].who}</label><input id="person" className="input" maxLength={60} placeholder={KIND[kind].placeholder} value={person} onChange={(e) => setPerson(e.target.value)} /></div>
+        <AmountInput label="Jumlah" align="left" value={amount} onChange={setAmount} quick={false} />
         <div className="grid gap-4 sm:grid-cols-2">
-          <div><label className="label" htmlFor="d-date">Tanggal pinjam</label><input id="d-date" type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} /></div>
-          <div><label className="label" htmlFor="d-due">Jatuh tempo <span className="font-normal text-muted">(opsional)</span></label><input id="d-due" type="date" className="input" value={due} min={date} onChange={(e) => setDue(e.target.value)} /></div>
+          <div><label className="field-label" htmlFor="d-date">Tanggal</label><input id="d-date" type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+          <div><label className="field-label" htmlFor="d-due">Jatuh tempo <span className="font-normal text-faint">(opsional)</span></label><input id="d-due" type="date" className="input" value={due} min={date} onChange={(e) => setDue(e.target.value)} /></div>
         </div>
-        <div><label className="label" htmlFor="d-note">Catatan <span className="font-normal text-muted">(opsional)</span></label><input id="d-note" className="input" maxLength={200} placeholder="mis. Untuk servis motor, dicicil 3x" value={note} onChange={(e) => setNote(e.target.value)} /></div>
+        <div><label className="field-label" htmlFor="d-note">Catatan</label><input id="d-note" className="input" maxLength={200} placeholder="Untuk servis motor, dicicil 3 kali" value={note} onChange={(e) => setNote(e.target.value)} /></div>
         <ErrorText>{err}</ErrorText>
       </form>
     </Modal>
@@ -191,14 +186,13 @@ function PaymentForm({ r, onClose }) {
   }
 
   return (
-    <Modal open onClose={onClose} title={`${KIND[r.d.kind].pay} · ${r.d.person}`}
-      footer={<><button className="btn-ghost" onClick={onClose}>Batal</button><button form="pay-form" className="btn-primary" disabled={busy}>{busy ? 'Menyimpan…' : 'Simpan'}</button></>}>
-      <form id="pay-form" onSubmit={submit} className="space-y-4">
-        <p className="rounded-md bg-canvas px-3.5 py-2.5 text-sm">Sisa saat ini <b className="num">{rupiah(r.remaining)}</b></p>
-        <div><label className="label" htmlFor="amount">Nominal dibayar</label><AmountInput value={amount} onChange={setAmount} quick={false} /></div>
+    <Modal open onClose={onClose} title={KIND[r.d.kind].pay} description={`${r.d.person} · sisa ${rupiah(r.remaining)}`}
+      footer={<><button className="btn-secondary" onClick={onClose}>Batal</button><button form="pay-form" className="btn-primary" disabled={busy}>{busy ? 'Menyimpan…' : 'Simpan'}</button></>}>
+      <form id="pay-form" onSubmit={submit} className="space-y-5">
+        <AmountInput label="Nominal" align="left" value={amount} onChange={setAmount} quick={false} />
         <div className="grid gap-4 sm:grid-cols-2">
-          <div><label className="label" htmlFor="p-date">Tanggal</label><input id="p-date" type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} /></div>
-          <div><label className="label" htmlFor="p-note">Catatan</label><input id="p-note" className="input" maxLength={200} placeholder="mis. Cicilan ke-1" value={note} onChange={(e) => setNote(e.target.value)} /></div>
+          <div><label className="field-label" htmlFor="p-date">Tanggal</label><input id="p-date" type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+          <div><label className="field-label" htmlFor="p-note">Catatan</label><input id="p-note" className="input" maxLength={200} placeholder="Cicilan ke-1" value={note} onChange={(e) => setNote(e.target.value)} /></div>
         </div>
         <ErrorText>{err}</ErrorText>
       </form>

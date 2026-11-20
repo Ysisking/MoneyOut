@@ -1,11 +1,12 @@
 'use client'
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { ChevronRight, Plus } from 'lucide-react'
 import { useData } from '@/components/DataProvider'
-import { PageHeader } from '@/components/ui'
+import { PageHeader, IconBubble } from '@/components/ui'
 import { INPUT_ITEMS } from '@/components/AppShell'
+import Register from '@/components/Register'
 import { rupiah, thisMonth, monthLabel } from '@/lib/format'
-import { total, ofKind, inMonth, overview } from '@/lib/stats'
+import { total, ofKind, inMonth, overview, registerRows } from '@/lib/stats'
 
 const DESC = {
   '/pemasukan/': 'Gaji, freelance, bonus, hasil usaha',
@@ -13,9 +14,7 @@ const DESC = {
   '/simpanan/': 'Tabungan, dana darurat, investasi, aset',
   '/hutang-piutang/': 'Pinjaman, cicilan, jatuh tempo',
 }
-const INK = { '/pemasukan/': 'text-masuk-text', '/pengeluaran/': 'text-keluar-text', '/simpanan/': 'text-simpan-text', '/hutang-piutang/': 'text-utang-text' }
 
-// Seperti halaman "daftar isi" buku kas: nama bab … angka.
 export default function InputVariable() {
   const data = useData()
   const m = inMonth(data.transactions, thisMonth())
@@ -24,30 +23,26 @@ export default function InputVariable() {
     '/pemasukan/': [total(ofKind(m, 'pemasukan')), 'bulan ini'],
     '/pengeluaran/': [total(ofKind(m, 'pengeluaran')), 'bulan ini'],
     '/simpanan/': [total(ofKind(m, 'simpanan')), 'bulan ini'],
-    '/hutang-piutang/': [o.hutang, `hutang aktif · piutang ${rupiah(o.piutang)}`],
+    '/hutang-piutang/': [o.hutang, 'hutang aktif'],
   }
   return (
-    <div className="max-w-3xl">
-      <PageHeader eyebrow={`Daftar isi · ${monthLabel(thisMonth())}`} title="Input Variable" desc="Pilih bab yang ingin dicatat atau diperiksa."
-        action={<button className="btn-primary" onClick={() => data.openTx()}><Plus size={18} /> Catat</button>} />
-      <ol className="card divide-y divide-line">
-        {INPUT_ITEMS.map(({ href, label, icon: Icon }, i) => (
-          <li key={href}>
-            <Link href={href} className="group flex items-center gap-4 px-4 py-5 transition hover:bg-gold-soft/40 sm:px-6">
-              <span className="num w-6 text-sm text-muted">{String(i + 1).padStart(2, '0')}</span>
-              <Icon size={22} className={`shrink-0 ${INK[href]}`} />
-              <span className="min-w-0 flex-1">
-                <span className="flex items-baseline gap-2">
-                  <span className="font-display text-xl font-semibold group-hover:underline">{label}</span>
-                  <span className="mb-1 hidden flex-1 border-b-2 border-dotted border-rule sm:block" aria-hidden="true" />
-                  <span className={`num ml-auto text-base font-semibold ${INK[href]}`}>{rupiah(value[href][0])}</span>
-                </span>
-                <span className="mt-0.5 flex justify-between gap-3 text-xs text-muted"><span className="truncate">{DESC[href]}</span><span className="shrink-0">{value[href][1]}</span></span>
-              </span>
-            </Link>
-          </li>
+    <div>
+      <PageHeader title="Input Variable" desc={`Semua catatan keuangan, dikelompokkan per jenis. Angka untuk ${monthLabel(thisMonth())}.`}
+        action={<button className="btn-primary" onClick={() => data.openTx()}><Plus size={16} /> Catat</button>} />
+      <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {INPUT_ITEMS.map(({ href, label, icon }) => (
+          <Link key={href} href={href} className="panel group p-4 transition-colors hover:border-edge hover:bg-subtle">
+            <div className="flex items-center justify-between"><IconBubble icon={icon} size="sm" /><ChevronRight size={16} className="text-faint transition group-hover:translate-x-0.5 group-hover:text-ink" /></div>
+            <p className="mt-4 text-sm font-medium">{label}</p>
+            <p className="num mt-0.5 text-xl font-semibold tracking-tight">{rupiah(value[href][0])}</p>
+            <p className="mt-0.5 truncate text-xs text-sub">{value[href][1]} · {DESC[href]}</p>
+          </Link>
         ))}
-      </ol>
+      </div>
+      <section className="panel overflow-hidden">
+        <div className="border-b border-line px-5 py-4"><h2 className="text-md font-semibold tracking-tight">Semua transaksi</h2></div>
+        <Register rows={registerRows(data)} empty="Belum ada transaksi." />
+      </section>
     </div>
   )
 }
