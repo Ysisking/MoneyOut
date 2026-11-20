@@ -1,0 +1,33 @@
+import { iconFor, TONE } from '@/lib/categories'
+import { rupiah } from '@/lib/format'
+
+// Daftar batang horizontal satu warna: porsi tiap kategori terhadap total.
+export default function CategoryBars({ rows, kind, tone, limit = 6 }) {
+  const t = TONE[tone]
+  const sum = rows.reduce((s, r) => s + r.amount, 0)
+  const max = rows[0]?.amount || 1
+  const shown = rows.slice(0, limit)
+  const rest = rows.slice(limit)
+  const list = rest.length ? [...shown, { name: `${rest.length} kategori lain`, amount: rest.reduce((s, r) => s + r.amount, 0), other: true }] : shown
+  return (
+    <ul className="space-y-3">
+      {list.map((r) => {
+        const Icon = iconFor(kind, r.name)
+        const pct = sum ? Math.round((r.amount / sum) * 100) : 0
+        return (
+          <li key={r.name} title={`${r.name}: ${rupiah(r.amount)} (${pct}%)`}>
+            <div className="mb-1 flex items-center gap-2 text-sm">
+              <Icon size={15} className="shrink-0 text-muted" />
+              <span className="min-w-0 flex-1 truncate font-medium">{r.name}</span>
+              <span className="tnum font-semibold">{rupiah(r.amount)}</span>
+              <span className="tnum w-9 text-right text-xs text-muted">{pct}%</span>
+            </div>
+            <div className="h-2 rounded-full bg-canvas">
+              <div className="h-2 rounded-full" style={{ width: `${Math.max(2, (r.amount / max) * 100)}%`, background: r.other ? '#B8C4BF' : t.fill }} />
+            </div>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
