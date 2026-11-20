@@ -1,25 +1,42 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root { color-scheme: light; }
 html { -webkit-tap-highlight-color: transparent; }
-body { @apply bg-canvas text-ink font-sans antialiased; }
+body { @apply bg-paper text-ink font-sans antialiased; }
+h1, h2, h3 { @apply font-display; letter-spacing: -0.01em; }
 
 @layer components {
-  .card { @apply rounded-2xl border border-line bg-white shadow-card; }
-  .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60; }
-  .btn-primary { @apply btn bg-brand text-white hover:bg-brand-dark; }
-  .btn-ghost { @apply btn border border-line bg-white text-ink hover:bg-canvas; }
-  .btn-danger { @apply btn border border-red-200 bg-white text-red-700 hover:bg-red-50; }
+  /* Lembar kertas: garis tipis, tanpa bayangan tebal. */
+  .card { @apply rounded-lg border border-line bg-sheet; box-shadow: 0 1px 0 rgba(28, 26, 23, .04); }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60; }
+  .btn-primary { @apply btn bg-brand text-white hover:bg-brand-dark; box-shadow: inset 0 -2px 0 rgba(0,0,0,.18); }
+  .btn-ghost { @apply btn border border-rule bg-sheet text-ink hover:bg-canvas; }
+  .btn-danger { @apply btn border border-red-300 bg-sheet text-keluar-text hover:bg-keluar-soft; }
   .label { @apply mb-1.5 block text-sm font-semibold text-ink; }
-  .input { @apply w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-[15px] outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-4 focus:ring-brand/10; }
-  .chip { @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-medium transition; }
-  .chip-on { @apply chip border-brand bg-brand text-white; }
-  .chip-off { @apply chip border-line bg-white text-ink hover:border-brand/40; }
+  .input { @apply w-full rounded-md border border-rule bg-sheet px-3 py-2.5 text-[15px] outline-none transition placeholder:text-muted/60 focus:border-brand focus:ring-2 focus:ring-brand/15; }
+  .chip { @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-sm font-medium transition; }
+  .chip-on { @apply chip border-ink bg-ink text-sheet; }
+  .chip-off { @apply chip border-rule bg-sheet text-ink hover:border-ink/40; }
+  /* Label bagian gaya kop buku: huruf kecil berjarak. */
+  .eyebrow { @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-muted; }
+  /* Angka pembukuan */
+  .num { @apply font-mono tabular-nums; font-feature-settings: "tnum" 1, "zero" 0; }
   .tnum { font-variant-numeric: tabular-nums; }
+  /* Garis dobel di bawah total — konvensi akuntansi. */
+  .total-rule { border-bottom: 3px double theme('colors.ink'); }
+  /* Kertas bergaris untuk bagian register. */
+  .ruled { background-image: linear-gradient(to bottom, transparent calc(100% - 1px), theme('colors.line') 0); background-size: 100% 2.75rem; }
+  .stamp { @apply inline-block rotate-[-8deg] rounded border-2 px-2 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-[0.18em]; }
 }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .grow-x { animation: grow-x .7s cubic-bezier(.2,.7,.2,1) both; transform-origin: left; }
+  @keyframes grow-x { from { transform: scaleX(0); } }
+  .rise { animation: rise .45s ease-out both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+}

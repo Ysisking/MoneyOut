@@ -1,22 +1,34 @@
 'use client'
-import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { backend } from '@/lib/backend'
+import { accountBalances } from '@/lib/stats'
 import TxForm from './TxForm'
+import AccountForm from './AccountForm'
+import BudgetForm from './BudgetForm'
 
 const DataCtx = createContext(null)
 export const useData = () => useContext(DataCtx)
 
-const EMPTY = { transactions: [], debts: [], payments: [], categories: [] }
+const EMPTY = { transactions: [], debts: [], payments: [], categories: [], accounts: [], transfers: [], budgets: [] }
 
 export default function DataProvider({ userId, children }) {
   const [data, setData] = useState(EMPTY)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [txForm, setTxForm] = useState(null) // { kind, tx } atau null
+  const [modal, setModal] = useState(null) // { type: 'tx'|'account'|'budget', ...opsi }
 
   const reload = useCallback(async () => {
     setError('')
-    try { setData(await backend.loadAll()) } catch (e) { setError(e.message) } finally { setLoading(false) }
+    try {
+      let d = { ...EMPTY, ...(await backend.loadAll()) }
+      // Pengguna lama / baru tanpa dompet: buat "Tunai" lalu pindahkan catatan lama ke sana.
+      if (!d.accounts.length) {
+        const acc = await backend.save('accounts', { name: 'Tunai', type: 'tunai', opening_balance: 0 })
+        if (d.transactions.some((t) => !t.account_id)) await backend.assignOrphans(acc.id)
+        d = { ...EMPTY, ...(await backend.loadAll()) }
+      }
+      setData(d)
+    } catch (e) { setError(e.message) } finally { setLoading(false) }
   }, [])
   useEffect(() => { setLoading(true); reload() }, [userId, reload])
 
@@ -35,16 +47,23 @@ export default function DataProvider({ userId, children }) {
     setData((d) => {
       const next = { ...d, [table]: d[table].filter((r) => r.id !== id) }
       if (table === 'debts') next.payments = d.payments.filter((p) => p.debt_id !== id)
+      if (table === 'accounts') next.transfers = d.transfers.filter((t) => t.from_account_id !== id && t.to_account_id !== id)
       return next
     })
   }, [])
 
-  const openTx = useCallback((opts = {}) => setTxForm({ kind: opts.kind || opts.tx?.kind || 'pengeluaran', tx: opts.tx || null }), [])
+  const balances = useMemo(() => accountBalances(data), [data])
+  const openTx = useCallback((o = {}) => setModal({ type: 'tx', kind: o.kind || o.tx?.kind || (o.transfer ? 'transfer' : 'pengeluaran'), tx: o.tx || null, transfer: o.transfer || null, accountId: o.accountId || null, date: o.date || null }), [])
+  const openAccount = useCallback((account = null) => setModal({ type: 'account', account }), [])
+  const openBudget = useCallback(() => setModal({ type: 'budget' }), [])
+  const close = useCallback(() => setModal(null), [])
 
   return (
-    <DataCtx.Provider value={{ ...data, loading, error, reload, save, remove, openTx }}>
+    <DataCtx.Provider value={{ ...data, balances, loading, error, reload, save, remove, openTx, openAccount, openBudget }}>
       {children}
-      {txForm && <TxForm key={txForm.tx?.id || 'new'} initial={txForm} onClose={() => setTxForm(null)} />}
+      {modal?.type === 'tx' && <TxForm key={modal.tx?.id || modal.transfer?.id || 'new'} initial={modal} onClose={close} />}
+      {modal?.type === 'account' && <AccountForm account={modal.account} onClose={close} />}
+      {modal?.type === 'budget' && <BudgetForm onClose={close} />}
     </DataCtx.Provider>
   )
 }

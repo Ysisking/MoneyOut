@@ -27,14 +27,14 @@ export default function HutangPiutang() {
 
   return (
     <div>
-      <PageHeader title="Hutang & Piutang" desc="Catat siapa meminjam berapa, kapan jatuh tempo, dan cicilannya."
+      <PageHeader eyebrow="Input Variable" title="Hutang & Piutang" desc="Catat siapa meminjam berapa, kapan jatuh tempo, dan cicilannya."
         action={<button className="btn-primary" onClick={() => setForm({})}><Plus size={18} /> Catat baru</button>} />
 
       <div className="mb-5 grid gap-3 sm:grid-cols-2">
         {['hutang', 'piutang'].map((k) => (
-          <button key={k} onClick={() => setTab(k)} className={`card p-4 text-left transition ${tab === k ? 'ring-2 ring-brand' : 'hover:-translate-y-0.5'}`}>
+          <button key={k} onClick={() => setTab(k)} className={`card p-4 text-left transition ${tab === k ? 'border-ink ring-1 ring-ink' : 'hover:border-ink/40'}`}>
             <p className="text-sm text-muted">{KIND[k].label} belum lunas</p>
-            <p className={`tnum mt-0.5 text-2xl font-extrabold ${k === 'hutang' ? 'text-keluar-text' : 'text-utang-text'}`}>{rupiah(sum(k))}</p>
+            <p className={`num mt-0.5 text-2xl font-semibold ${k === 'hutang' ? 'text-keluar-text' : 'text-utang-text'}`}>{rupiah(sum(k))}</p>
             <p className="mt-1 text-xs text-muted">{KIND[k].desc}</p>
           </button>
         ))}
@@ -68,27 +68,26 @@ function DebtCard({ r, onEdit, onPay }) {
   const { d, paid, remaining, done, progress } = r
   const n = d.due_date ? daysUntil(d.due_date) : null
   return (
-    <div className="card p-4">
+    <div className={`card relative overflow-hidden p-4 ${done ? 'bg-canvas' : ''}`}>
+      {done && <span className="stamp absolute right-5 top-5 border-masuk-text text-masuk-text opacity-85">Lunas</span>}
       <div className="flex items-start gap-3">
-        <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold uppercase ${d.kind === 'hutang' ? 'bg-keluar-soft text-keluar-text' : 'bg-utang-soft text-utang-text'}`}>{d.person.slice(0, 2)}</div>
+        <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 font-display text-sm font-semibold uppercase ${d.kind === 'hutang' ? 'border-keluar-text text-keluar-text' : 'border-utang-text text-utang-text'}`}>{d.person.slice(0, 2)}</div>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-bold">{d.person}</p>
+          <p className="truncate font-display text-lg font-semibold leading-tight">{d.person}</p>
           <p className="truncate text-xs text-muted">{dateShort(d.date)}{d.note ? ` · ${d.note}` : ''}</p>
         </div>
-        {done ? (
-          <span className="flex items-center gap-1 rounded-full bg-masuk-soft px-2 py-0.5 text-xs font-semibold text-masuk-text"><CircleCheck size={13} /> Lunas</span>
-        ) : n !== null && (
+        {!done && n !== null && (
           <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${n < 0 ? 'bg-red-50 text-red-700' : n <= 7 ? 'bg-utang-soft text-utang-text' : 'bg-canvas text-muted'}`}>
             <CalendarClock size={13} /> {n < 0 ? `Lewat ${-n} hari` : n === 0 ? 'Hari ini' : dateShort(d.due_date)}
           </span>
         )}
       </div>
       <div className="mt-4 flex items-end justify-between text-sm">
-        <div><p className="text-xs text-muted">Sisa</p><p className="tnum text-lg font-extrabold">{rupiah(remaining)}</p></div>
-        <p className="tnum text-right text-xs text-muted">Dibayar {rupiah(paid)}<br />dari {rupiah(d.amount)}</p>
+        <div><p className="eyebrow">Sisa</p><p className="num text-xl font-semibold">{rupiah(remaining)}</p></div>
+        <p className="num text-right text-xs text-muted">Dibayar {rupiah(paid)}<br />dari {rupiah(d.amount)}</p>
       </div>
-      <div className="mt-2 h-2 rounded-full bg-canvas" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100}>
-        <div className="h-2 rounded-full bg-masuk" style={{ width: `${progress * 100}%` }} />
+      <div className="mt-2 h-2 overflow-hidden rounded-sm bg-canvas ring-1 ring-inset ring-line" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100}>
+        <div className="grow-x h-2 bg-masuk-text" style={{ width: `${progress * 100}%` }} />
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         {!done && <button className="btn-primary !px-3 !py-2" onClick={onPay}>{KIND[d.kind].pay}</button>}
@@ -100,11 +99,11 @@ function DebtCard({ r, onEdit, onPay }) {
         )}
       </div>
       {open && (
-        <ul className="mt-3 divide-y divide-line rounded-xl border border-line text-sm">
+        <ul className="mt-3 divide-y divide-line border-y border-line text-sm">
           {r.payments.map((p) => (
             <li key={p.id} className="flex items-center gap-2 px-3 py-2">
               <span className="flex-1 text-muted">{dateShort(p.date)}{p.note ? ` · ${p.note}` : ''}</span>
-              <span className="tnum font-semibold">{rupiah(p.amount)}</span>
+              <span className="num">{rupiah(p.amount)}</span>
               <button onClick={() => confirm('Hapus pembayaran ini?') && remove('payments', p.id)} className="rounded p-1 text-muted hover:text-red-700" aria-label="Hapus pembayaran"><Trash2 size={14} /></button>
             </li>
           ))}
@@ -195,7 +194,7 @@ function PaymentForm({ r, onClose }) {
     <Modal open onClose={onClose} title={`${KIND[r.d.kind].pay} · ${r.d.person}`}
       footer={<><button className="btn-ghost" onClick={onClose}>Batal</button><button form="pay-form" className="btn-primary" disabled={busy}>{busy ? 'Menyimpan…' : 'Simpan'}</button></>}>
       <form id="pay-form" onSubmit={submit} className="space-y-4">
-        <p className="rounded-xl bg-canvas px-3.5 py-2.5 text-sm">Sisa saat ini <b className="tnum">{rupiah(r.remaining)}</b></p>
+        <p className="rounded-md bg-canvas px-3.5 py-2.5 text-sm">Sisa saat ini <b className="num">{rupiah(r.remaining)}</b></p>
         <div><label className="label" htmlFor="amount">Nominal dibayar</label><AmountInput value={amount} onChange={setAmount} quick={false} /></div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div><label className="label" htmlFor="p-date">Tanggal</label><input id="p-date" type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} /></div>

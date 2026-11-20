@@ -94,12 +94,54 @@ create table if not exists public.mo_debt_payments (
 );
 create index if not exists mo_debt_payments_debt on public.mo_debt_payments (debt_id);
 
+-- ---------------------------------------------------------------- Dompet (akun), transfer, anggaran
+-- Mengikuti pola aplikasi keuangan klasik (Quicken, MS Money, GnuCash): setiap dompet
+-- punya register sendiri dengan saldo berjalan; perpindahan uang antar-dompet = transfer.
+create table if not exists public.mo_accounts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  name text not null check (char_length(trim(name)) between 1 and 40),
+  type text not null default 'tunai' check (type in ('tunai', 'bank', 'ewallet', 'lainnya')),
+  opening_balance numeric(15, 2) not null default 0,
+  created_at timestamptz not null default now()
+);
+create index if not exists mo_accounts_user on public.mo_accounts (user_id);
+
+alter table public.mo_transactions add column if not exists account_id uuid references public.mo_accounts (id) on delete set null;
+create index if not exists mo_transactions_account on public.mo_transactions (account_id);
+
+create table if not exists public.mo_transfers (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  from_account_id uuid not null references public.mo_accounts (id) on delete cascade,
+  to_account_id uuid not null references public.mo_accounts (id) on delete cascade,
+  amount numeric(15, 2) not null check (amount > 0),
+  note text not null default '' check (char_length(note) <= 200),
+  date date not null default current_date,
+  created_at timestamptz not null default now(),
+  check (from_account_id <> to_account_id)
+);
+create index if not exists mo_transfers_user on public.mo_transfers (user_id);
+
+-- Anggaran bulanan per kategori pengeluaran (metode amplop, seperti YNAB).
+create table if not exists public.mo_budgets (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  category text not null check (char_length(category) between 1 and 40),
+  amount numeric(15, 2) not null check (amount > 0),
+  created_at timestamptz not null default now(),
+  unique (user_id, category)
+);
+
 -- ---------------------------------------------------------------- Row Level Security
 alter table public.mo_profiles enable row level security;
 alter table public.mo_categories enable row level security;
 alter table public.mo_transactions enable row level security;
 alter table public.mo_debts enable row level security;
 alter table public.mo_debt_payments enable row level security;
+alter table public.mo_accounts enable row level security;
+alter table public.mo_transfers enable row level security;
+alter table public.mo_budgets enable row level security;
 
 drop policy if exists mo_profiles_select on public.mo_profiles;
 drop policy if exists mo_profiles_insert on public.mo_profiles;
@@ -115,7 +157,28 @@ create policy mo_categories_own on public.mo_categories for all to authenticated
 
 drop policy if exists mo_transactions_own on public.mo_transactions;
 create policy mo_transactions_own on public.mo_transactions for all to authenticated
+  using (user_id = (select auth.uid()))
+  with check (
+    user_id = (select auth.uid())
+    and (account_id is null or exists (select 1 from public.mo_accounts a where a.id = account_id and a.user_id = (select auth.uid())))
+  );
+
+drop policy if exists mo_accounts_own on public.mo_accounts;
+create policy mo_accounts_own on public.mo_accounts for all to authenticated
   using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+
+drop policy if exists mo_budgets_own on public.mo_budgets;
+create policy mo_budgets_own on public.mo_budgets for all to authenticated
+  using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+
+drop policy if exists mo_transfers_own on public.mo_transfers;
+create policy mo_transfers_own on public.mo_transfers for all to authenticated
+  using (user_id = (select auth.uid()))
+  with check (
+    user_id = (select auth.uid())
+    and exists (select 1 from public.mo_accounts a where a.id = from_account_id and a.user_id = (select auth.uid()))
+    and exists (select 1 from public.mo_accounts a where a.id = to_account_id and a.user_id = (select auth.uid()))
+  );
 
 drop policy if exists mo_debts_own on public.mo_debts;
 create policy mo_debts_own on public.mo_debts for all to authenticated

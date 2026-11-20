@@ -40,12 +40,12 @@ export default function Laporan() {
 
   return (
     <div>
-      <PageHeader title="Laporan" desc="Arus uang per bulan dan kategori dalam setahun."
+      <PageHeader eyebrow="Buku besar tahunan" title="Laporan" desc="Arus uang per bulan dan kategori dalam setahun."
         action={<div className="flex gap-2">
-          <div className="inline-flex items-center gap-1 rounded-xl border border-line bg-white p-1">
-            <button className="rounded-lg p-1.5 hover:bg-canvas disabled:opacity-30" disabled={year <= minYear} onClick={() => setYear(year - 1)} aria-label="Tahun sebelumnya"><ChevronLeft size={18} /></button>
-            <span className="w-14 text-center text-sm font-semibold">{year}</span>
-            <button className="rounded-lg p-1.5 hover:bg-canvas disabled:opacity-30" disabled={year >= new Date().getFullYear()} onClick={() => setYear(year + 1)} aria-label="Tahun berikutnya"><ChevronRight size={18} /></button>
+          <div className="inline-flex items-center rounded-md border border-rule bg-sheet">
+            <button className="px-2 py-1.5 text-muted hover:text-ink disabled:opacity-25" disabled={year <= minYear} onClick={() => setYear(year - 1)} aria-label="Tahun sebelumnya"><ChevronLeft size={18} /></button>
+            <span className="num w-16 border-x border-line py-1.5 text-center font-semibold">{year}</span>
+            <button className="px-2 py-1.5 text-muted hover:text-ink disabled:opacity-25" disabled={year >= new Date().getFullYear()} onClick={() => setYear(year + 1)} aria-label="Tahun berikutnya"><ChevronRight size={18} /></button>
           </div>
           <button className="btn-ghost" onClick={exportCsv} disabled={!yearTx.length}><Download size={16} /> CSV</button>
         </div>} />
@@ -53,13 +53,13 @@ export default function Laporan() {
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {KIND_ORDER.map((k) => (
           <div key={k} className="card p-4">
-            <p className="flex items-center gap-2 text-xs font-medium text-muted"><span className={`h-2.5 w-2.5 rounded-sm ${TONE[KINDS[k].tone].dot}`} />{KINDS[k].label} {year}</p>
-            <p className="tnum mt-1 text-lg font-extrabold">{rupiah(sums[k])}</p>
+            <p className="eyebrow flex items-center gap-2"><span className={`h-2.5 w-2.5 rounded-sm ${TONE[KINDS[k].tone].dot}`} />{KINDS[k].label} {year}</p>
+            <p className="num mt-1 text-lg font-semibold">{rupiah(sums[k])}</p>
           </div>
         ))}
         <div className="card p-4">
-          <p className="text-xs font-medium text-muted">Sisa {year}</p>
-          <p className="tnum mt-1 text-lg font-extrabold">{rupiah(sums.pemasukan - sums.pengeluaran - sums.simpanan)}</p>
+          <p className="eyebrow">Sisa {year}</p>
+          <p className="num mt-1 text-lg font-semibold">{rupiah(sums.pemasukan - sums.pengeluaran - sums.simpanan)}</p>
         </div>
       </div>
 
@@ -75,7 +75,7 @@ export default function Laporan() {
               </ul>
             </div>
             <div className="relative flex gap-2">
-              <div className="flex h-52 w-12 shrink-0 flex-col justify-between text-right text-[11px] text-muted tnum">
+              <div className="flex h-52 w-12 shrink-0 flex-col justify-between text-right text-[11px] text-muted num">
                 {ticks.map((t, i) => <span key={i} className="-translate-y-1/2 first:translate-y-0 last:translate-y-0">{rupiahShort(t)}</span>)}
               </div>
               <div className="relative min-w-0 flex-1 overflow-x-auto">
@@ -90,10 +90,10 @@ export default function Laporan() {
                           <div key={s.kind} className="w-full max-w-[12px] rounded-t" style={{ height: `${(m[s.kind] / max) * 100}%`, background: s.color, minHeight: m[s.kind] ? 2 : 0 }} />
                         ))}
                         {hover === i && (
-                          <div className={`pointer-events-none absolute bottom-full z-10 mb-2 w-48 rounded-xl bg-ink p-3 text-xs text-white shadow-xl ${i > 8 ? 'right-0' : i < 3 ? 'left-0' : 'left-1/2 -translate-x-1/2'}`}>
+                          <div className={`pointer-events-none absolute bottom-full z-10 mb-2 w-48 rounded-md bg-ink p-3 text-xs text-white shadow-xl ${i > 8 ? 'right-0' : i < 3 ? 'left-0' : 'left-1/2 -translate-x-1/2'}`}>
                             <p className="mb-1.5 font-bold capitalize">{monthLabel(m.key)}</p>
-                            {SERIES.map((s) => <p key={s.kind} className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm" style={{ background: s.color }} /><span className="flex-1 text-white/70">{s.label}</span><span className="tnum">{rupiah(m[s.kind])}</span></p>)}
-                            <p className="mt-1.5 flex border-t border-white/20 pt-1.5"><span className="flex-1 text-white/70">Sisa</span><span className="tnum font-semibold">{rupiah(m.sisa)}</span></p>
+                            {SERIES.map((s) => <p key={s.kind} className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm" style={{ background: s.color }} /><span className="flex-1 text-white/70">{s.label}</span><span className="num">{rupiah(m[s.kind])}</span></p>)}
+                            <p className="mt-1.5 flex border-t border-white/20 pt-1.5"><span className="flex-1 text-white/70">Sisa</span><span className="num font-semibold">{rupiah(m.sisa)}</span></p>
                           </div>
                         )}
                       </div>
@@ -111,12 +111,12 @@ export default function Laporan() {
             <section className="card overflow-x-auto">
               <h2 className="p-5 pb-3 font-bold">Tabel bulanan</h2>
               <table className="w-full min-w-[32rem] text-sm">
-                <thead><tr className="border-y border-line bg-canvas/70 text-left text-xs text-muted">
+                <thead><tr className="border-b-2 border-ink text-left text-[11px] uppercase tracking-[0.1em] text-muted">
                   <th className="px-5 py-2 font-semibold">Bulan</th>
                   {SERIES.map((s) => <th key={s.kind} className="px-3 py-2 text-right font-semibold">{s.label}</th>)}
                   <th className="px-5 py-2 text-right font-semibold">Sisa</th>
                 </tr></thead>
-                <tbody className="tnum divide-y divide-line">
+                <tbody className="num divide-y divide-line">
                   {months.map((m) => (
                     <tr key={m.key} className={m.pemasukan + m.pengeluaran + m.simpanan ? '' : 'text-muted/60'}>
                       <td className="px-5 py-2 capitalize">{monthShort(m.key)}</td>

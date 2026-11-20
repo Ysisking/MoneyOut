@@ -1,146 +1,167 @@
 'use client'
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowDownLeft, ArrowUpRight, PiggyBank, HandCoins, ChevronRight, Wallet, CalendarClock, Receipt, BrainCircuit } from 'lucide-react'
-import Insight, { LEVEL } from '@/components/Insight'
-import { analyze } from '@/lib/insights'
+import { ArrowDownLeft, ArrowUpRight, PiggyBank, ArrowRightLeft, ChevronRight, CalendarClock, BrainCircuit, Mail } from 'lucide-react'
 import { useAuth } from '@/app/providers'
 import { useData } from '@/components/DataProvider'
-import { MonthSwitcher, EmptyState } from '@/components/ui'
-import TxRow from '@/components/TxRow'
-import CategoryBars from '@/components/CategoryBars'
-import { rupiah, thisMonth, greeting, daysUntil, dateShort } from '@/lib/format'
-import { total, ofKind, inMonth, byCategory, newestFirst, overview, debtInfo } from '@/lib/stats'
+import { MonthSwitcher, SectionTitle } from '@/components/ui'
+import Register from '@/components/Register'
+import Insight, { LEVEL } from '@/components/Insight'
+import { SpendCalendar, BudgetEnvelopes, Streak, FlowBar } from '@/components/Widgets'
+import { ACCOUNT_ICON } from '@/components/AccountPicker'
+import { analyze } from '@/lib/insights'
+import { rupiah, thisMonth, greeting, daysUntil, dateShort, todayISO, daysInMonth, monthLabel } from '@/lib/format'
+import { total, ofKind, inMonth, debtInfo, registerRows, budgetStatus, recordStreak, dailySpend } from '@/lib/stats'
 
 export default function Dasbor() {
   const { user } = useAuth()
-  const { transactions, debts, payments, openTx } = useData()
+  const data = useData()
+  const { transactions, debts, payments, balances, budgets, openTx, openBudget } = data
   const [month, setMonth] = useState(thisMonth())
+  const isCurrent = month === thisMonth()
+  const elapsed = isCurrent ? Number(todayISO().slice(8)) : daysInMonth(month)
 
-  const all = useMemo(() => overview({ transactions, debts, payments }), [transactions, debts, payments])
   const m = useMemo(() => {
     const tx = inMonth(transactions, month)
     const masuk = total(ofKind(tx, 'pemasukan')), keluar = total(ofKind(tx, 'pengeluaran')), simpan = total(ofKind(tx, 'simpanan'))
-    return { masuk, keluar, simpan, sisa: masuk - keluar - simpan, cats: byCategory(ofKind(tx, 'pengeluaran')), count: tx.length }
+    return { masuk, keluar, simpan, sisa: masuk - keluar - simpan }
   }, [transactions, month])
-  const ai = useMemo(() => analyze({ transactions, debts, payments }, month), [transactions, debts, payments, month])
+  const saldo = balances.reduce((s, a) => s + a.balance, 0)
+  const ai = useMemo(() => analyze(data, month), [data, month])
   const highlights = [...ai.risks, ...ai.findings].slice(0, 3)
-  const recent = useMemo(() => [...transactions].sort(newestFirst).slice(0, 6), [transactions])
-  const due = useMemo(() => debts
-    .map((d) => ({ d, ...debtInfo(d, payments) }))
+  const env = useMemo(() => budgetStatus(data, month, { elapsed, days: daysInMonth(month) }), [data, month, elapsed])
+  const streak = useMemo(() => recordStreak(transactions, todayISO()), [transactions])
+  const daily = useMemo(() => dailySpend(transactions, month), [transactions, month])
+  const rows = useMemo(() => registerRows(data), [data])
+  const due = useMemo(() => debts.map((d) => ({ d, ...debtInfo(d, payments) }))
     .filter((x) => !x.done && x.d.due_date && daysUntil(x.d.due_date) <= 7)
     .sort((a, b) => a.d.due_date.localeCompare(b.d.due_date)), [debts, payments])
-
-  const tiles = [
-    { label: 'Pemasukan', value: m.masuk, icon: ArrowDownLeft, href: '/pemasukan/', cls: 'bg-masuk-soft text-masuk-text' },
-    { label: 'Pengeluaran', value: m.keluar, icon: ArrowUpRight, href: '/pengeluaran/', cls: 'bg-keluar-soft text-keluar-text' },
-    { label: 'Disimpan', value: m.simpan, icon: PiggyBank, href: '/simpanan/', cls: 'bg-simpan-soft text-simpan-text' },
-  ]
+  const today = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <div className="space-y-8">
+      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-rule pb-4">
         <div>
-          <p className="text-sm text-muted">{greeting()},</p>
-          <h1 className="text-2xl font-extrabold tracking-tight">@{user.username}</h1>
-          {user.occupation && <span className="mt-1.5 inline-block rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-muted ring-1 ring-line">{user.occupation}</span>}
+          <p className="eyebrow">{today}</p>
+          <h1 className="mt-1 text-3xl font-semibold sm:text-[2.1rem]">{greeting()}, {user.username}.</h1>
         </div>
         <MonthSwitcher value={month} onChange={setMonth} />
-      </div>
+      </header>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="relative overflow-hidden rounded-2xl bg-brand-dark p-5 text-white lg:col-span-2">
-          <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-brand-light/30 blur-2xl" />
-          <div className="relative">
-            <p className="flex items-center gap-2 text-sm text-white/75"><Wallet size={16} /> Saldo bisa dipakai</p>
-            <p className="tnum mt-1 text-3xl font-extrabold sm:text-4xl">{rupiah(all.saldo)}</p>
-            <p className="mt-1 text-xs text-white/60">Total pemasukan − pengeluaran − simpanan, sepanjang waktu.</p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              <button onClick={() => openTx({ kind: 'pemasukan' })} className="btn bg-white/15 text-white hover:bg-white/25"><ArrowDownLeft size={16} /> Pemasukan</button>
-              <button onClick={() => openTx({ kind: 'pengeluaran' })} className="btn bg-white text-brand-dark hover:bg-white/90"><ArrowUpRight size={16} /> Pengeluaran</button>
-              <button onClick={() => openTx({ kind: 'simpanan' })} className="btn bg-white/15 text-white hover:bg-white/25"><PiggyBank size={16} /> Simpan</button>
+      <div className="grid gap-5 lg:grid-cols-[1.45fr_1fr]">
+        {/* Neraca: saldo + ringkasan bulan dalam format buku kas */}
+        <section className="card p-5 sm:p-6">
+          <p className="eyebrow">Saldo semua dompet</p>
+          <p className={`num mt-1 text-[2.4rem] font-semibold leading-none tracking-tight sm:text-5xl ${saldo < 0 ? 'text-keluar-text' : ''}`}>{rupiah(saldo)}</p>
+          <div className="no-scrollbar -mx-1 mt-4 flex gap-2 overflow-x-auto px-1 lg:hidden">
+            {balances.map((a) => {
+              const Icon = ACCOUNT_ICON[a.type]
+              return <Link key={a.id} href={`/dompet/?id=${a.id}`} className="flex shrink-0 items-center gap-2 rounded-md border border-rule px-2.5 py-1.5 text-xs"><Icon size={14} className="text-muted" /><span className="font-semibold">{a.name}</span><span className="num text-muted">{rupiah(a.balance)}</span></Link>
+            })}
+          </div>
+
+          <div className="mt-6 grid gap-6 sm:grid-cols-2">
+            <dl className="text-sm">
+              <p className="eyebrow mb-2 capitalize">{monthLabel(month)}</p>
+              {[
+                ['Pemasukan', m.masuk, '+', 'text-masuk-text', '/pemasukan/'],
+                ['Pengeluaran', m.keluar, '−', 'text-keluar-text', '/pengeluaran/'],
+                ['Disimpan', m.simpan, '−', 'text-simpan-text', '/simpanan/'],
+              ].map(([k, v, sg, c, href]) => (
+                <Link key={k} href={href} className="group flex items-baseline justify-between border-b border-dotted border-rule py-1.5">
+                  <dt className="group-hover:underline">{k}</dt>
+                  <dd className={`num ${c}`}>{sg} {rupiah(v)}</dd>
+                </Link>
+              ))}
+              <div className="flex items-baseline justify-between border-t border-ink pt-2">
+                <dt className="font-semibold">{m.sisa >= 0 ? 'Sisa' : 'Kurang'}</dt>
+                <dd className={`num total-rule font-semibold ${m.sisa < 0 ? 'text-keluar-text' : ''}`}>{rupiah(m.sisa)}</dd>
+              </div>
+            </dl>
+            <div>
+              <p className="eyebrow mb-2">Ke mana uang masuk pergi</p>
+              <FlowBar {...m} />
             </div>
           </div>
-        </div>
-        <div className="card grid grid-cols-1 divide-y divide-line">
-          {[
-            { label: 'Total simpanan', value: all.simpan, href: '/simpanan/', icon: PiggyBank, cls: 'text-simpan-text' },
-            { label: 'Hutang belum lunas', value: all.hutang, href: '/hutang-piutang/', icon: HandCoins, cls: 'text-keluar-text' },
-            { label: 'Piutang belum kembali', value: all.piutang, href: '/hutang-piutang/', icon: HandCoins, cls: 'text-utang-text' },
-          ].map(({ label, value, href, icon: Icon, cls }) => (
-            <Link key={label} href={href} className="flex items-center gap-3 px-4 py-3.5 hover:bg-canvas">
-              <Icon size={18} className={cls} />
-              <span className="flex-1 text-sm text-muted">{label}</span>
-              <span className="tnum font-bold">{rupiah(value)}</span>
-            </Link>
-          ))}
+        </section>
+
+        <div className="grid gap-5">
+          <section className="card p-5">
+            <p className="eyebrow mb-3">Rantai mencatat</p>
+            <Streak data={streak} />
+          </section>
+          <section className="card p-2">
+            <div className="grid grid-cols-4 divide-x divide-line">
+              {[
+                ['Masuk', ArrowDownLeft, () => openTx({ kind: 'pemasukan' }), 'text-masuk-text'],
+                ['Keluar', ArrowUpRight, () => openTx({ kind: 'pengeluaran' }), 'text-keluar-text'],
+                ['Simpan', PiggyBank, () => openTx({ kind: 'simpanan' }), 'text-simpan-text'],
+                ['Pindah', ArrowRightLeft, () => openTx({ transfer: null, kind: 'transfer' }), 'text-ink'],
+              ].map(([k, Icon, fn, c]) => (
+                <button key={k} onClick={fn} className="flex flex-col items-center gap-1 rounded py-2.5 text-xs font-semibold hover:bg-canvas">
+                  <Icon size={20} className={c} /> {k}
+                </button>
+              ))}
+            </div>
+          </section>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {tiles.map(({ label, value, icon: Icon, href, cls }) => (
-          <Link key={label} href={href} className="card p-4 transition hover:-translate-y-0.5">
-            <span className={`inline-flex rounded-lg p-1.5 ${cls}`}><Icon size={16} /></span>
-            <p className="mt-2 text-xs font-medium text-muted">{label} bulan ini</p>
-            <p className="tnum mt-0.5 text-lg font-extrabold">{rupiah(value)}</p>
-          </Link>
-        ))}
-        <div className="card p-4">
-          <span className="inline-flex rounded-lg bg-brand-soft p-1.5 text-brand"><Wallet size={16} /></span>
-          <p className="mt-2 text-xs font-medium text-muted">Sisa bulan ini</p>
-          <p className={`tnum mt-0.5 text-lg font-extrabold ${m.sisa < 0 ? 'text-red-700' : ''}`}>{rupiah(m.sisa)}</p>
-        </div>
-      </div>
-
-      {due.length > 0 && (
-        <div className="card border-utang/40 p-4">
-          <p className="mb-2 flex items-center gap-2 text-sm font-bold text-utang-text"><CalendarClock size={16} /> Jatuh tempo dalam 7 hari</p>
-          <ul className="divide-y divide-line">
-            {due.map(({ d, remaining }) => {
-              const n = daysUntil(d.due_date)
-              return (
-                <li key={d.id} className="flex items-center gap-3 py-2 text-sm">
-                  <span className="flex-1"><b>{d.kind === 'hutang' ? 'Bayar ke' : 'Tagih'} {d.person}</b> <span className="text-muted">· {dateShort(d.due_date)}</span></span>
-                  <span className={`text-xs font-semibold ${n < 0 ? 'text-red-700' : 'text-utang-text'}`}>{n < 0 ? `Lewat ${-n} hari` : n === 0 ? 'Hari ini' : `${n} hari lagi`}</span>
-                  <span className="tnum font-bold">{rupiah(remaining)}</span>
-                </li>
-              )
-            })}
-          </ul>
+      {(due.length > 0 || highlights.length > 0) && (
+        <div className="grid items-start gap-5 lg:grid-cols-[1.45fr_1fr]">
+          {highlights.length > 0 && (
+            <section className="card p-5">
+              <SectionTitle action={<Link href="/analisis/" className="flex items-center text-sm font-semibold text-brand">Selengkapnya <ChevronRight size={16} /></Link>}>
+                <span className="flex items-center gap-2"><BrainCircuit size={18} /> Kata Data Analyst
+                  {ai.score && (() => { const L = LEVEL[ai.score.level]; return <span className={`whitespace-nowrap rounded-sm px-1.5 py-0.5 font-sans text-xs font-bold ${L.cls}`}>Skor {ai.score.value}</span> })()}
+                </span>
+              </SectionTitle>
+              <ul className="divide-y divide-line">{highlights.map((it, i) => <Insight key={i} item={it} compact />)}</ul>
+            </section>
+          )}
+          {due.length > 0 && (
+            <section className="card border-utang/50 p-5">
+              <SectionTitle><span className="flex items-center gap-2"><CalendarClock size={18} /> Jatuh tempo</span></SectionTitle>
+              <ul className="divide-y divide-line">
+                {due.map(({ d, remaining }) => {
+                  const n = daysUntil(d.due_date)
+                  return (
+                    <li key={d.id}>
+                      <Link href="/hutang-piutang/" className="flex items-center gap-3 py-2.5 text-sm">
+                        <Mail size={16} className="shrink-0 text-muted" />
+                        <span className="min-w-0 flex-1"><b>{d.kind === 'hutang' ? 'Bayar ke' : 'Tagih'} {d.person}</b><span className="block text-xs text-muted">{dateShort(d.due_date)} · <span className={n < 0 ? 'font-semibold text-keluar-text' : 'text-utang-text'}>{n < 0 ? `lewat ${-n} hari` : n === 0 ? 'hari ini' : `${n} hari lagi`}</span></span></span>
+                        <span className="num font-semibold">{rupiah(remaining)}</span>
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            </section>
+          )}
         </div>
       )}
 
-      {ai.hasData && highlights.length > 0 && (
+      <div className="grid gap-5 lg:grid-cols-2">
         <section className="card p-5">
-          <div className="mb-1 flex flex-wrap items-center gap-2">
-            <h2 className="flex items-center gap-2 font-bold"><BrainCircuit size={18} className="text-brand" /> Kata Data Analyst</h2>
-            {ai.score && (() => { const L = LEVEL[ai.score.level]; return <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${L.cls}`}><L.icon size={13} /> Skor {ai.score.value} · {ai.score.word}</span> })()}
-            <Link href="/analisis/" className="ml-auto flex items-center text-sm font-semibold text-brand">Analisis lengkap <ChevronRight size={16} /></Link>
-          </div>
-          <ul className="divide-y divide-line">{highlights.map((it, i) => <Insight key={i} item={it} compact />)}</ul>
+          <SectionTitle action={<Link href="/pengeluaran/" className="text-sm font-semibold text-brand">Rincian</Link>}>Kalender pengeluaran</SectionTitle>
+          <SpendCalendar month={month} daily={daily} />
         </section>
-      )}
-
-      <div className="grid gap-4 lg:grid-cols-2">
         <section className="card p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-bold">Pengeluaran per kategori</h2>
-            <Link href="/laporan/" className="flex items-center text-sm font-semibold text-brand">Laporan <ChevronRight size={16} /></Link>
-          </div>
-          {m.cats.length
-            ? <CategoryBars rows={m.cats} kind="pengeluaran" tone="keluar" />
-            : <EmptyState icon={Receipt} title="Belum ada pengeluaran bulan ini" text="Catat kopi, parkir, atau makan siang pertamamu." />}
-        </section>
-        <section className="card overflow-hidden">
-          <div className="flex items-center justify-between p-5 pb-2">
-            <h2 className="font-bold">Transaksi terakhir</h2>
-            <Link href="/input/" className="flex items-center text-sm font-semibold text-brand">Semua <ChevronRight size={16} /></Link>
-          </div>
-          {recent.length
-            ? <div className="divide-y divide-line pb-2">{recent.map((t) => <TxRow key={t.id} tx={t} showDate />)}</div>
-            : <EmptyState icon={Wallet} title="Belum ada catatan" text="Mulai dengan mencatat gaji atau pemasukan pertamamu." action={<button className="btn-primary" onClick={() => openTx({ kind: 'pemasukan' })}>Catat pemasukan</button>} />}
+          <SectionTitle action={<button onClick={openBudget} className="text-sm font-semibold text-brand hover:underline">{budgets.length ? 'Ubah' : 'Atur'}</button>}>Amplop anggaran</SectionTitle>
+          {env.length ? <BudgetEnvelopes items={env} isCurrent={isCurrent} limit={5} onEdit={openBudget} /> : (
+            <div className="rounded-md border border-dashed border-rule p-5 text-sm">
+              <p className="font-display text-base font-semibold">Bagi uangmu ke dalam amplop.</p>
+              <p className="mt-1 text-muted">Tentukan batas belanja per kategori — makan, jajan, transport. MoneyOut akan memberi tahu sisa jatah per hari dan kapan kamu belanja terlalu cepat.</p>
+              <button onClick={openBudget} className="btn-primary mt-4">Atur anggaran</button>
+            </div>
+          )}
         </section>
       </div>
+
+      <section className="card overflow-hidden pt-4">
+        <SectionTitle className="px-4" action={<Link href="/input/" className="flex items-center text-sm font-semibold text-brand">Semua catatan <ChevronRight size={16} /></Link>}>Catatan terakhir</SectionTitle>
+        <Register rows={rows} limit={8} empty="Buku masih kosong. Catat gaji atau pengeluaran pertamamu lewat tombol Catat." />
+      </section>
     </div>
   )
 }

@@ -18,8 +18,8 @@ export default function Logo({ className = '', light = false }) {
   return (
     <Link href="/" className={`flex items-center gap-2 ${className}`}>
       <CoinMark />
-      <span className={`text-lg font-extrabold tracking-tight ${light ? 'text-white' : ''}`}>
-        Money<span className={light ? 'text-[#FFD34D]' : 'text-brand'}>Out</span>
+      <span className={`font-display text-xl font-semibold tracking-tight ${light ? 'text-[#F6E7BD]' : ''}`}>
+        Money<span className={light ? 'text-[#E0A400]' : 'text-brand'}>Out</span>
       </span>
     </Link>
   )
