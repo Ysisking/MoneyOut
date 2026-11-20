@@ -1,7 +1,9 @@
 'use client'
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowDownLeft, ArrowUpRight, PiggyBank, HandCoins, ChevronRight, Wallet, CalendarClock, Receipt } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, PiggyBank, HandCoins, ChevronRight, Wallet, CalendarClock, Receipt, BrainCircuit } from 'lucide-react'
+import Insight, { LEVEL } from '@/components/Insight'
+import { analyze } from '@/lib/insights'
 import { useAuth } from '@/app/providers'
 import { useData } from '@/components/DataProvider'
 import { MonthSwitcher, EmptyState } from '@/components/ui'
@@ -21,6 +23,8 @@ export default function Dasbor() {
     const masuk = total(ofKind(tx, 'pemasukan')), keluar = total(ofKind(tx, 'pengeluaran')), simpan = total(ofKind(tx, 'simpanan'))
     return { masuk, keluar, simpan, sisa: masuk - keluar - simpan, cats: byCategory(ofKind(tx, 'pengeluaran')), count: tx.length }
   }, [transactions, month])
+  const ai = useMemo(() => analyze({ transactions, debts, payments }, month), [transactions, debts, payments, month])
+  const highlights = [...ai.risks, ...ai.findings].slice(0, 3)
   const recent = useMemo(() => [...transactions].sort(newestFirst).slice(0, 6), [transactions])
   const due = useMemo(() => debts
     .map((d) => ({ d, ...debtInfo(d, payments) }))
@@ -106,6 +110,17 @@ export default function Dasbor() {
         </div>
       )}
 
+      {ai.hasData && highlights.length > 0 && (
+        <section className="card p-5">
+          <div className="mb-1 flex flex-wrap items-center gap-2">
+            <h2 className="flex items-center gap-2 font-bold"><BrainCircuit size={18} className="text-brand" /> Kata Data Analyst</h2>
+            {ai.score && (() => { const L = LEVEL[ai.score.level]; return <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${L.cls}`}><L.icon size={13} /> Skor {ai.score.value} · {ai.score.word}</span> })()}
+            <Link href="/analisis/" className="ml-auto flex items-center text-sm font-semibold text-brand">Analisis lengkap <ChevronRight size={16} /></Link>
+          </div>
+          <ul className="divide-y divide-line">{highlights.map((it, i) => <Insight key={i} item={it} compact />)}</ul>
+        </section>
+      )}
+
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="card p-5">
           <div className="mb-4 flex items-center justify-between">
@@ -119,7 +134,7 @@ export default function Dasbor() {
         <section className="card overflow-hidden">
           <div className="flex items-center justify-between p-5 pb-2">
             <h2 className="font-bold">Transaksi terakhir</h2>
-            <Link href="/pengeluaran/" className="flex items-center text-sm font-semibold text-brand">Semua <ChevronRight size={16} /></Link>
+            <Link href="/input/" className="flex items-center text-sm font-semibold text-brand">Semua <ChevronRight size={16} /></Link>
           </div>
           {recent.length
             ? <div className="divide-y divide-line pb-2">{recent.map((t) => <TxRow key={t.id} tx={t} showDate />)}</div>

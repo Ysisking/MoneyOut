@@ -29,7 +29,7 @@ export default function AuthFrame({ title, subtitle, children }) {
       <section className="relative hidden overflow-hidden bg-brand-dark p-12 text-white lg:flex lg:flex-col">
         <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-brand-light/30 blur-3xl" />
         <div className="absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-masuk/20 blur-3xl" />
-        <div className="relative flex items-center gap-2 text-xl font-extrabold"><span className="grid h-9 w-9 place-items-center rounded-xl bg-white/15">M</span> MoneyOut</div>
+        <Logo light className="relative" />
         <div className="relative mt-auto max-w-md">
           <h2 className="text-4xl font-extrabold leading-tight">Tahu uangmu datang dari mana, dan pergi ke mana.</h2>
           <p className="mt-3 text-white/75">Catatan keuangan harian untuk pekerja kantoran, freelancer, pelaku usaha, sampai mahasiswa.</p>

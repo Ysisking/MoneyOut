@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Plus, Check } from 'lucide-react'
 import { Modal, Segmented, ErrorText } from './ui'
 import AmountInput from './AmountInput'
 import { useData } from './DataProvider'
@@ -18,6 +18,7 @@ export default function TxForm({ initial, onClose }) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [confirmDel, setConfirmDel] = useState(false)
+  const [newCat, setNewCat] = useState(null) // null = tertutup, string = sedang diketik
 
   const cats = categoriesFor(kind, categories)
   const meta = KINDS[kind]
@@ -33,6 +34,14 @@ export default function TxForm({ initial, onClose }) {
       await save('transactions', { ...(editing ? { id: initial.tx.id } : {}), kind, amount, category, date, note: note.trim() })
       onClose()
     } catch (e2) { setErr(e2.message); setBusy(false) }
+  }
+
+  async function addCategory() {
+    const n = (newCat || '').trim().replace(/\s+/g, ' ')
+    if (!n) return setNewCat(null)
+    const exist = cats.find((c) => c.name.toLowerCase() === n.toLowerCase())
+    if (exist) { setCategory(exist.name); return setNewCat(null) }
+    try { await save('categories', { kind, name: n }); setCategory(n); setNewCat(null); setErr('') } catch (e2) { setErr(e2.message) }
   }
 
   async function del() {
@@ -75,7 +84,20 @@ export default function TxForm({ initial, onClose }) {
                 </button>
               )
             })}
+            {newCat === null && (
+              <button type="button" onClick={() => setNewCat('')}
+                className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-line p-2.5 text-xs font-medium text-muted hover:border-brand/50 hover:text-brand">
+                <span className="rounded-lg bg-canvas p-1.5"><Plus size={18} /></span> Kategori baru
+              </button>
+            )}
           </div>
+          {newCat !== null && (
+            <div className="mt-2 flex gap-2">
+              <input autoFocus className="input !py-2" maxLength={40} placeholder="Nama kategori baru, mis. Cicilan motor" value={newCat}
+                onChange={(e) => setNewCat(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCategory() } if (e.key === 'Escape') { e.stopPropagation(); setNewCat(null) } }} />
+              <button type="button" className="btn-primary !px-3" onClick={addCategory} aria-label="Simpan kategori"><Check size={18} /></button>
+            </div>
+          )}
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
