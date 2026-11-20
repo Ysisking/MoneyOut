@@ -34,7 +34,12 @@ Keamanan data dijaga **Row Level Security**: setiap pengguna hanya bisa membaca 
 | Akun & data | Hanya di browser itu (localStorage) | Di server, bisa dibuka dari perangkat mana pun |
 | Cocok untuk | Mencoba-coba / demo | Dipakai sungguhan |
 
-## Mengaktifkan Supabase
+## Supabase yang dipakai
+Project **MoneyOut** (`nrzvlugmkztqfqlnpxok`, region Singapura). URL & kunci anon-nya sudah ada di
+`.env.production`, jadi build di Cloudflare otomatis tersambung tanpa mengisi variabel apa pun.
+Kunci anon memang publik; jangan pernah menaruh `service_role` key di repo.
+
+## Mengaktifkan Supabase (project lain)
 1. Buka project Supabase (boleh project yang sama dengan web lain; semua tabel berawalan `mo_`).
 2. **SQL Editor** → tempel seluruh isi `supabase/moneyout.sql` → Run. Aman dijalankan ulang.
 3. **Authentication → Sign In / Providers → Email**: pastikan aktif. Bila *Confirm email* aktif,

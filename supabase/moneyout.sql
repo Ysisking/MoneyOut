@@ -30,12 +30,15 @@ begin
   return new;
 end $$;
 
+revoke execute on function public.mo_handle_new_user() from public, anon, authenticated;
+
 drop trigger if exists mo_on_auth_user_created on auth.users;
 create trigger mo_on_auth_user_created
   after insert on auth.users
   for each row execute function public.mo_handle_new_user();
 
 -- Cek ketersediaan username dari halaman daftar (tanpa membuka isi tabel profil).
+-- Sengaja bisa dipanggil tanpa login (anon); hanya mengembalikan true/false.
 create or replace function public.mo_username_available(p_username text)
 returns boolean language sql stable security definer set search_path = public as $$
   select not exists (select 1 from public.mo_profiles where lower(username) = lower(trim(p_username)));
