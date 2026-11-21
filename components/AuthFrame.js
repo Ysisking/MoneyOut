@@ -66,7 +66,7 @@ export default function AuthFrame({ title, subtitle, children }) {
             </>
           )}
         </div>
-        <p className="text-xs text-faint">© {new Date().getFullYear()} MoneyOut</p>
+        <p className="text-xs text-faint">© {new Date().getFullYear()} gammaproject. Hak cipta dilindungi.</p>
       </section>
       <section className="hidden flex-col items-center justify-center gap-10 border-l border-line bg-subtle p-12 lg:flex">
         <Preview />

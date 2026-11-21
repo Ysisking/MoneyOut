@@ -5,6 +5,8 @@ import { BASE } from '@/lib/config'
 export const metadata = {
   title: { default: 'MoneyOut · Catat uang masuk & keluar', template: '%s · MoneyOut' },
   description: 'Catatan keuangan pribadi: pemasukan, pengeluaran, simpanan, hutang dan piutang.',
+  authors: [{ name: 'gammaproject' }],
+  creator: 'gammaproject',
   icons: { icon: BASE + '/icon.svg' },
 }
 export const viewport = { themeColor: "#0E7A5F", width: 'device-width', initialScale: 1 }

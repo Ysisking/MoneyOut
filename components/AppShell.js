@@ -128,6 +128,7 @@ function Frame({ user, mode, path, children }) {
         {error ? (
           <div className="space-y-3"><ErrorText>Gagal memuat data: {error}</ErrorText><button className="btn-secondary" onClick={reload}>Coba lagi</button></div>
         ) : loading ? <Spinner /> : children}
+        <footer className="mt-16 border-t border-line pt-5 text-xs text-faint">© {new Date().getFullYear()} gammaproject. Hak cipta dilindungi.</footer>
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-canvas/95 pb-[max(env(safe-area-inset-bottom),0.25rem)] backdrop-blur lg:hidden" aria-label="Navigasi utama">
