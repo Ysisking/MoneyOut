@@ -10,6 +10,7 @@ import BalanceChart from '@/components/BalanceChart'
 import Insight from '@/components/Insight'
 import CategoryBars from '@/components/CategoryBars'
 import { BudgetList } from '@/components/Widgets'
+import ResetData from '@/components/ResetData'
 import { analyze } from '@/lib/insights'
 import { rupiah, thisMonth, shiftMonth, greeting, daysUntil, dateShort, todayISO, daysInMonth, monthShort } from '@/lib/format'
 import { total, ofKind, inMonth, byCategory, debtInfo, registerRows, budgetStatus, balanceSeries, netWorth } from '@/lib/stats'
@@ -161,6 +162,7 @@ export default function Dasbor() {
 
         </div>
       </div>
+      <ResetData />
     </div>
   )
 }

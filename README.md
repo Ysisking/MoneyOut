@@ -36,7 +36,7 @@ MoneyOut meniru pola aplikasi keuangan pribadi yang sudah teruji puluhan tahun, 
 ## Menu
 | Menu | Isi |
 |---|---|
-| **Dasbor** | Total saldo + grafik saldo (30 hari–1 tahun), pemasukan/pengeluaran/simpanan bulan ini dibanding bulan lalu, transaksi terbaru, pengeluaran per kategori, perlu perhatian (jatuh tempo + risiko), anggaran |
+| **Dasbor** | Tombol **Reset** di bagian bawah untuk memulai ulang pencatatan (3 langkah konfirmasi: ringkasan + unduh cadangan, ketik RESET + password, jeda 5 detik). Total saldo + grafik saldo (30 hari–1 tahun), pemasukan/pengeluaran/simpanan bulan ini dibanding bulan lalu, transaksi terbaru, pengeluaran per kategori, perlu perhatian (jatuh tempo + risiko), anggaran |
 | **Input Variable** | Ringkasan keempat jenis catatan + semua transaksi: |
 | ↳ Pemasukan | Gaji bulanan, freelance / harian, bonus & THR, usaha, hasil investasi, dll. |
 | ↳ Pengeluaran | Kalender + amplop anggaran + register; kategori makan, kopi, parkir, transport, pakaian, tagihan, dll. |

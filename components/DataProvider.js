@@ -53,6 +53,7 @@ export default function DataProvider({ userId, children }) {
     })
   }, [])
 
+  const resetAll = useCallback(async () => { await backend.resetAll(); await reload() }, [reload])
   const balances = useMemo(() => accountBalances(data), [data])
   const openTx = useCallback((o = {}) => setModal({ type: 'tx', kind: o.kind || o.tx?.kind || (o.transfer ? 'transfer' : 'pengeluaran'), tx: o.tx || null, transfer: o.transfer || null, accountId: o.accountId || null, date: o.date || null }), [])
   const openAccount = useCallback((account = null) => setModal({ type: 'account', account }), [])
@@ -61,7 +62,7 @@ export default function DataProvider({ userId, children }) {
   const close = useCallback(() => setModal(null), [])
 
   return (
-    <DataCtx.Provider value={{ ...data, balances, loading, error, reload, save, remove, openTx, openAccount, openBudget, openAsset }}>
+    <DataCtx.Provider value={{ ...data, balances, loading, error, reload, resetAll, save, remove, openTx, openAccount, openBudget, openAsset }}>
       {children}
       {modal?.type === 'tx' && <TxForm key={modal.tx?.id || modal.transfer?.id || 'new'} initial={modal} onClose={close} />}
       {modal?.type === 'account' && <AccountForm account={modal.account} onClose={close} />}
