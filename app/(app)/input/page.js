@@ -6,13 +6,14 @@ import { PageHeader, IconBubble } from '@/components/ui'
 import { INPUT_ITEMS } from '@/components/AppShell'
 import Register from '@/components/Register'
 import { rupiah, thisMonth, monthLabel } from '@/lib/format'
-import { total, ofKind, inMonth, overview, registerRows } from '@/lib/stats'
+import { total, ofKind, inMonth, overview, registerRows, netWorth } from '@/lib/stats'
 
 const DESC = {
   '/pemasukan/': 'Gaji, freelance, bonus, hasil usaha',
   '/pengeluaran/': 'Parkir, kopi, makan, pakaian, tagihan',
   '/simpanan/': 'Tabungan, dana darurat, investasi, aset',
   '/hutang-piutang/': 'Pinjaman, cicilan, jatuh tempo',
+  '/aset/': 'Saldo awal, rumah, kendaraan, emas, saham',
 }
 
 export default function InputVariable() {
@@ -24,12 +25,13 @@ export default function InputVariable() {
     '/pengeluaran/': [total(ofKind(m, 'pengeluaran')), 'bulan ini'],
     '/simpanan/': [total(ofKind(m, 'simpanan')), 'bulan ini'],
     '/hutang-piutang/': [o.hutang, 'hutang aktif'],
+    '/aset/': [netWorth(data).total, 'kekayaan bersih'],
   }
   return (
     <div>
       <PageHeader title="Input Variable" desc={`Semua catatan keuangan, dikelompokkan per jenis. Angka untuk ${monthLabel(thisMonth())}.`}
         action={<button className="btn-primary" onClick={() => data.openTx()}><Plus size={16} /> Catat</button>} />
-      <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {INPUT_ITEMS.map(({ href, label, icon }) => (
           <Link key={href} href={href} className="panel group p-4 transition-colors hover:border-edge hover:bg-subtle">
             <div className="flex items-center justify-between"><IconBubble icon={icon} size="sm" /><ChevronRight size={16} className="text-faint transition group-hover:translate-x-0.5 group-hover:text-ink" /></div>

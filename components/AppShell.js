@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   LayoutGrid, ArrowDownLeft, ArrowUpRight, PiggyBank, HandCoins, BarChart3, SquarePen, Sparkles,
-  LogOut, Plus, Menu, X, ChevronDown,
+  LogOut, Plus, Menu, X, ChevronDown, Gem,
 } from 'lucide-react'
 import { useAuth } from '@/app/providers'
 import DataProvider, { useData } from './DataProvider'
@@ -18,6 +18,7 @@ export const INPUT_ITEMS = [
   { href: '/pengeluaran/', label: 'Pengeluaran', icon: ArrowUpRight },
   { href: '/simpanan/', label: 'Simpanan', icon: PiggyBank },
   { href: '/hutang-piutang/', label: 'Hutang & Piutang', icon: HandCoins },
+  { href: '/aset/', label: 'Aset & Saldo', icon: Gem },
 ]
 export const NAV = [
   { href: '/', label: 'Dasbor', icon: LayoutGrid },

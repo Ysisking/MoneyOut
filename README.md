@@ -33,6 +33,7 @@ MoneyOut meniru pola aplikasi keuangan pribadi yang sudah teruji puluhan tahun, 
 | ↳ Pengeluaran | Kalender + amplop anggaran + register; kategori makan, kopi, parkir, transport, pakaian, tagihan, dll. |
 | ↳ Simpanan | Tabungan, dana darurat, investasi, emas, aset, deposito — plus total terkumpul per jenis |
 | ↳ Hutang & Piutang | Siapa meminjam berapa, jatuh tempo, progres cicilan, riwayat pembayaran |
+| ↳ Aset & Saldo | Saldo saat ini tiap dompet (uang yang sudah ada sebelum mencatat — mengubah saldo awal, bukan pemasukan) dan aset lain (properti, kendaraan, emas, investasi, deposito, barang berharga). Menghitung **kekayaan bersih** = dompet + simpanan + aset + piutang − hutang |
 | **Data Analyst** | Ringkasan bulanan, skor kesehatan (0–100), hasil analisis yang bisa disaring (risiko / temuan / peluang), aturan 50/30/20, peringatan anggaran |
 | **Laporan** | Grafik & tabel arus uang per bulan dalam setahun, rincian per kategori, ekspor CSV |
 | **Dompet** (sidebar) | Saldo per dompet, grafik saldo, transaksi dengan saldo berjalan, pindah dompet, cocokkan saldo, tambah/ubah dompet |
@@ -48,7 +49,7 @@ pengeluaran bulanan), lonjakan kategori dibanding bulan-bulan sebelumnya pada ta
 dari belanja kecil (≤ Rp 50.000), pola akhir pekan, ketergantungan pada satu sumber pemasukan, naik-turunnya
 pemasukan, laju belanja vs sisa hari, serta hutang/piutang yang jatuh tempo.
 
-**Saldo dompet** = saldo awal + pemasukan − pengeluaran − simpanan ± pindah dompet. Hutang & piutang dicatat
+**Saldo dompet** = saldo awal + pemasukan − pengeluaran − simpanan ± pindah dompet. **Kekayaan bersih** = saldo semua dompet + simpanan terkumpul + nilai aset + piutang − hutang. Hutang & piutang dicatat
 terpisah dan tidak mengubah saldo.
 
 ## Pendaftaran

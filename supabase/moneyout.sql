@@ -133,6 +133,20 @@ create table if not exists public.mo_budgets (
   unique (user_id, category)
 );
 
+-- Aset: harta yang dimiliki di luar arus kas harian (rumah, kendaraan, emas, saham…).
+-- Nilainya dicatat apa adanya, tidak dihitung sebagai pemasukan.
+create table if not exists public.mo_assets (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  name text not null check (char_length(trim(name)) between 1 and 60),
+  type text not null default 'lainnya' check (type in ('properti', 'kendaraan', 'emas', 'investasi', 'tabungan', 'elektronik', 'lainnya')),
+  value numeric(15, 2) not null check (value >= 0),
+  as_of date not null default current_date,
+  note text not null default '' check (char_length(note) <= 200),
+  created_at timestamptz not null default now()
+);
+create index if not exists mo_assets_user on public.mo_assets (user_id);
+
 -- ---------------------------------------------------------------- Row Level Security
 alter table public.mo_profiles enable row level security;
 alter table public.mo_categories enable row level security;
@@ -142,6 +156,7 @@ alter table public.mo_debt_payments enable row level security;
 alter table public.mo_accounts enable row level security;
 alter table public.mo_transfers enable row level security;
 alter table public.mo_budgets enable row level security;
+alter table public.mo_assets enable row level security;
 
 drop policy if exists mo_profiles_select on public.mo_profiles;
 drop policy if exists mo_profiles_insert on public.mo_profiles;
@@ -165,6 +180,10 @@ create policy mo_transactions_own on public.mo_transactions for all to authentic
 
 drop policy if exists mo_accounts_own on public.mo_accounts;
 create policy mo_accounts_own on public.mo_accounts for all to authenticated
+  using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+
+drop policy if exists mo_assets_own on public.mo_assets;
+create policy mo_assets_own on public.mo_assets for all to authenticated
   using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 
 drop policy if exists mo_budgets_own on public.mo_budgets;

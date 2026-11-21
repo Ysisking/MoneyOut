@@ -12,7 +12,7 @@ import CategoryBars from '@/components/CategoryBars'
 import { BudgetList } from '@/components/Widgets'
 import { analyze } from '@/lib/insights'
 import { rupiah, thisMonth, shiftMonth, greeting, daysUntil, dateShort, todayISO, daysInMonth, monthShort } from '@/lib/format'
-import { total, ofKind, inMonth, byCategory, debtInfo, registerRows, budgetStatus, balanceSeries } from '@/lib/stats'
+import { total, ofKind, inMonth, byCategory, debtInfo, registerRows, budgetStatus, balanceSeries, netWorth } from '@/lib/stats'
 
 const RANGES = [{ value: 30, label: '30H', long: '30 hari' }, { value: 90, label: '90H', long: '90 hari' }, { value: 182, label: '6B', long: '6 bulan' }, { value: 365, label: '1T', long: '1 tahun' }]
 const monthTotals = (txs, m) => {
@@ -41,6 +41,7 @@ export default function Dasbor() {
   const elapsed = isCurrent ? Number(todayISO().slice(8)) : daysInMonth(month)
 
   const saldo = balances.reduce((s, a) => s + a.balance, 0)
+  const nw = useMemo(() => netWorth(data), [data])
   const series = useMemo(() => balanceSeries(data, { days: range, today: todayISO() }), [data, range])
   const delta = series.length ? series[series.length - 1].value - series[0].value : 0
   const cur = useMemo(() => monthTotals(transactions, month), [transactions, month])
@@ -78,7 +79,13 @@ export default function Dasbor() {
               </p>
             )}
           </div>
-          {!empty && <Segmented size="sm" value={range} onChange={setRange} options={RANGES} />}
+          <div className="flex flex-col items-end gap-3">
+            {!empty && <Segmented size="sm" value={range} onChange={setRange} options={RANGES} />}
+            <Link href="/aset/" className="group text-right">
+              <span className="block text-xs text-sub">Kekayaan bersih</span>
+              <span className="num block text-base font-medium group-hover:underline">{rupiah(nw.total)}</span>
+            </Link>
+          </div>
         </div>
         <div className="px-6 pb-2 pt-4">
           {empty ? (
