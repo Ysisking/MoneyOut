@@ -5,7 +5,7 @@ Pemilik (yatufht@gmail.com) menetapkan: **perubahan apa pun pada fitur admin han
 setelah pemilik memverifikasi/menyetujuinya secara eksplisit di percakapan.** Ini mencakup:
 - `app/(app)/admin/**`, `components/admin/**`
 - bagian "ADMIN, STATUS AKUN, NOTIFIKASI" di `supabase/moneyout.sql` (tabel `mo_admins`, `mo_activity`,
-  `mo_notifications`, fungsi `mo_is_admin`, `mo_is_active`, `mo_admin_set_status`, kebijakan RLS terkait)
+  `mo_notifications`, fungsi `mo_is_admin`, `mo_is_active`, `mo_admin_set_status`, `mo_admin_set_control`, tabel `mo_settings`, kebijakan RLS terkait)
 - pengumuman (broadcast) di `app/(app)/notifikasi/page.js`, serta `ADMIN_EMAIL` di `lib/config.js`
 
 Pembaruan lain (tampilan, fitur pencatatan, analisis, dll.) boleh langsung diterapkan ke semua pengguna.

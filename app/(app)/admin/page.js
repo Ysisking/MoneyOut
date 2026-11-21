@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import AdminPage from '@/components/admin/AdminPage'
+import ControlSwitch from '@/components/admin/ControlSwitch'
 
 export default function AdminHome() {
   return (
@@ -13,7 +14,8 @@ export default function AdminHome() {
           ['/admin/order/', 'Order', a.users.filter((u) => u.approvedAt && u.status === 'active' && !u.isAdmin).length, 'pelanggan aktif'],
           ['/admin/history/', 'History', a.users.filter((u) => u.online).length, 'sedang aktif'],
         ]
-        return (
+        return (<>
+          <ControlSwitch />
           <div className="grid gap-3 sm:grid-cols-3">
             {cards.map(([href, t, n, d]) => (
               <Link key={href} href={href} className="panel group p-5 transition-colors hover:bg-subtle">
@@ -23,7 +25,7 @@ export default function AdminHome() {
               </Link>
             ))}
           </div>
-        )
+        </>)
       }}
     </AdminPage>
   )

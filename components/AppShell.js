@@ -55,7 +55,9 @@ export default function AppShell({ children }) {
 
   if (!ready || !user) return <div className="mx-auto max-w-5xl p-8"><Spinner /></div>
   // Akun belum/tidak aktif (menunggu, antre, diblokir, dibekukan) tidak bisa membuka aplikasi.
-  if (!user.isAdmin && user.status !== 'active') return <StatusScreen user={user} />
+  // Kontrol masuk OFF: status menunggu/antre tetap boleh masuk. Block & freeze selalu berlaku.
+  const canUse = user.isAdmin || user.status === 'active' || (!user.accessControl && ['pending', 'queued'].includes(user.status))
+  if (!canUse) return <StatusScreen user={user} />
   return (
     <NotificationsProvider user={user}>
       <DataProvider userId={user.id}>

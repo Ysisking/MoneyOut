@@ -412,3 +412,69 @@ create policy mo_debt_payments_own on public.mo_debt_payments for all to authent
     user_id = (select auth.uid()) and (select public.mo_is_active())
     and exists (select 1 from public.mo_debts d where d.id = debt_id and d.user_id = (select auth.uid()))
   );
+
+-- ---------------------------------------------------------------- Kontrol masuk (on/off)
+-- OFF (bawaan): pendaftar langsung aktif; status menunggu/antre tetap boleh masuk. Block & freeze tetap berlaku.
+-- ON: pendaftar baru harus di-Accept admin (Purchase Order) setelah verifikasi pembayaran.
+create table if not exists public.mo_settings (
+  id int primary key default 1 check (id = 1),
+  access_control boolean not null default false,
+  contact_wa text not null default '6287821130367' check (contact_wa ~ '^[0-9]{8,15}$'),
+  updated_at timestamptz not null default now()
+);
+insert into public.mo_settings (id) values (1) on conflict do nothing;
+alter table public.mo_settings enable row level security;
+drop policy if exists mo_settings_read on public.mo_settings;
+create policy mo_settings_read on public.mo_settings for select to anon, authenticated using (true);
+revoke insert, update, delete on public.mo_settings from anon, authenticated;
+
+create or replace function public.mo_access_control()
+returns boolean language sql stable security definer set search_path = public as $$
+  select coalesce((select access_control from public.mo_settings where id = 1), false);
+$$;
+
+create or replace function public.mo_is_active()
+returns boolean language sql stable security definer set search_path = public as $$
+  select public.mo_is_admin() or exists (
+    select 1 from public.mo_profiles where id = auth.uid()
+      and (status = 'active' or (status in ('pending', 'queued') and not public.mo_access_control()))
+  );
+$$;
+
+create or replace function public.mo_admin_set_control(p_on boolean)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not public.mo_is_admin() then raise exception 'Hanya admin yang boleh mengubah kontrol masuk.'; end if;
+  update public.mo_settings set access_control = p_on, updated_at = now() where id = 1;
+end $$;
+revoke all on function public.mo_admin_set_control(boolean) from public, anon;
+grant execute on function public.mo_admin_set_control(boolean) to authenticated;
+
+create or replace function public.mo_handle_new_user()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare v_admin uuid; v_on boolean := public.mo_access_control();
+begin
+  if new.raw_user_meta_data ->> 'app' = 'moneyout' then
+    insert into public.mo_profiles (id, email, username, occupation, status, approved_at)
+    values (new.id, new.email, new.raw_user_meta_data ->> 'username', coalesce(left(new.raw_user_meta_data ->> 'occupation', 60), ''),
+            case when v_on then 'pending' else 'active' end, case when v_on then null else now() end)
+    on conflict (id) do nothing;
+    insert into public.mo_activity (user_id, event, detail) values (new.id, 'signup', '');
+    if v_on then
+      insert into public.mo_notifications (user_id, kind, level, title, body)
+      values (new.id, 'system', 'info', 'Pendaftaran diterima', 'Akunmu sedang menunggu persetujuan admin. Kamu akan diberi tahu di sini begitu akun aktif. Silakan hubungi kontak admin untuk verifikasi pembayaran pesanan.');
+    else
+      insert into public.mo_notifications (user_id, kind, level, title, body)
+      values (new.id, 'system', 'success', 'Selamat datang di MoneyOut', 'Akunmu sudah aktif. Selamat mencatat!');
+    end if;
+    for v_admin in select user_id from public.mo_admins loop
+      insert into public.mo_notifications (user_id, kind, level, title, body)
+      values (v_admin, 'system', case when v_on then 'warning' else 'info' end,
+              case when v_on then 'Pendaftar baru menunggu' else 'Pengguna baru mendaftar' end,
+              coalesce(new.raw_user_meta_data ->> 'username', new.email) || ' (' || new.email || ')' ||
+              case when v_on then ' masuk Purchase Order.' else ' langsung aktif (kontrol masuk OFF).' end);
+    end loop;
+  end if;
+  return new;
+end $$;
+revoke execute on function public.mo_handle_new_user() from public, anon, authenticated;
