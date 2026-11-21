@@ -1,5 +1,7 @@
 # MoneyOut
 
+**Web:** https://moneyout.gamma-tau.workers.dev · tampil di etalase gammaproject official store (menu Website).
+
 Catatan keuangan pribadi untuk masyarakat modern — pekerja kantoran, freelancer, pelaku usaha, mahasiswa.
 Semua pengguna wajib **daftar & masuk** (email + password) sebelum bisa mencatat.
 
