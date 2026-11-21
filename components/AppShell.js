@@ -4,13 +4,15 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   LayoutGrid, ArrowDownLeft, ArrowUpRight, PiggyBank, HandCoins, BarChart3, SquarePen, Sparkles,
-  LogOut, Plus, Menu, X, ChevronDown, Gem,
+  LogOut, Plus, Menu, X, ChevronDown, Gem, Bell, ShieldCheck,
 } from 'lucide-react'
 import { useAuth } from '@/app/providers'
 import DataProvider, { useData } from './DataProvider'
 import { LocalModeNote, Spinner, ErrorText } from './ui'
 import { ACCOUNT_ICON } from './AccountPicker'
 import Logo from './Logo'
+import NotificationsProvider, { useNotifications } from './Notifications'
+import StatusScreen from './StatusScreen'
 import { rupiah } from '@/lib/format'
 
 export const INPUT_ITEMS = [
@@ -25,7 +27,14 @@ export const NAV = [
   { href: '/input/', label: 'Input Variable', icon: SquarePen, children: INPUT_ITEMS },
   { href: '/analisis/', label: 'Data Analyst', icon: Sparkles },
   { href: '/laporan/', label: 'Laporan', icon: BarChart3 },
+  { href: '/notifikasi/', label: 'Notifikasi', icon: Bell, badge: 'unread' },
 ]
+export const ADMIN_ITEMS = [
+  { href: '/admin/purchase-order/', label: 'Purchase Order', badge: 'pending' },
+  { href: '/admin/order/', label: 'Order' },
+  { href: '/admin/history/', label: 'History' },
+]
+const ADMIN_NAV = { href: '/admin/', label: 'Admin', icon: ShieldCheck, children: ADMIN_ITEMS }
 const TABS = [
   { href: '/', label: 'Dasbor', icon: LayoutGrid },
   { href: '/input/', label: 'Input', icon: SquarePen, match: ['/input/', ...INPUT_ITEMS.map((i) => i.href)] },
@@ -45,16 +54,22 @@ export default function AppShell({ children }) {
   }, [ready, user, router, path])
 
   if (!ready || !user) return <div className="mx-auto max-w-5xl p-8"><Spinner /></div>
+  // Akun belum/tidak aktif (menunggu, antre, diblokir, dibekukan) tidak bisa membuka aplikasi.
+  if (!user.isAdmin && user.status !== 'active') return <StatusScreen user={user} />
   return (
-    <DataProvider userId={user.id}>
-      <Frame user={user} mode={mode} path={path}>{children}</Frame>
-    </DataProvider>
+    <NotificationsProvider user={user}>
+      <DataProvider userId={user.id}>
+        <Frame user={user} mode={mode} path={path}>{children}</Frame>
+      </DataProvider>
+    </NotificationsProvider>
   )
 }
 
 function Frame({ user, mode, path, children }) {
   const { signOut } = useAuth()
   const { openTx, loading, error, reload } = useData()
+  const notif = useNotifications()
+  const badges = { unread: notif.unread, pending: notif.pending }
   const [drawer, setDrawer] = useState(false)
   useEffect(() => setDrawer(false), [path])
 
@@ -73,9 +88,9 @@ function Frame({ user, mode, path, children }) {
   const nav = (
     <div className="space-y-7">
       <nav className="space-y-px">
-        {NAV.map((item) => item.children
-          ? <NavGroup key={item.href} item={item} path={path} />
-          : <NavLink key={item.href} item={item} active={isActive(path, item.href)} />)}
+        {[...NAV, ...(user.isAdmin ? [ADMIN_NAV] : [])].map((item) => item.children
+          ? <NavGroup key={item.href} item={item} path={path} badges={badges} />
+          : <NavLink key={item.href} item={item} active={isActive(path, item.href)} count={badges[item.badge]} />)}
       </nav>
       {!loading && <Suspense fallback={null}><Wallets path={path} /></Suspense>}
     </div>
@@ -107,6 +122,10 @@ function Frame({ user, mode, path, children }) {
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-canvas/90 px-4 backdrop-blur lg:hidden">
         <Logo />
         <div className="flex items-center gap-1">
+          <Link href="/notifikasi/" aria-label={`Notifikasi${notif.unread ? `, ${notif.unread} belum dibaca` : ''}`} className="relative rounded-lg p-2 text-sub hover:bg-subtle">
+            <Bell size={20} />
+            {notif.unread > 0 && <span className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-neg px-1 text-[10px] font-semibold text-white">{notif.unread > 9 ? '9+' : notif.unread}</span>}
+          </Link>
           <Link href="/akun/" aria-label="Profil"><Avatar user={user} /></Link>
           <button onClick={() => setDrawer(true)} className="rounded-lg p-2 text-sub hover:bg-subtle" aria-label="Menu"><Menu size={20} /></button>
         </div>
@@ -189,16 +208,18 @@ function Avatar({ user }) {
   return <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#E4E4E0] text-xs font-semibold uppercase text-ink">{user.username.slice(0, 2)}</span>
 }
 
-function NavLink({ item: { href, label, icon: Icon }, active, sub }) {
+function NavLink({ item: { href, label, icon: Icon }, active, sub, count }) {
   return (
     <Link href={href} aria-current={active ? 'page' : undefined}
       className={`flex items-center gap-2.5 rounded-lg px-2 text-sm transition ${sub ? 'h-8' : 'h-9'} ${active ? 'bg-well font-medium text-ink' : 'text-sub hover:bg-well hover:text-ink'}`}>
-      {Icon && <Icon size={16} strokeWidth={active ? 2.2 : 1.8} className="shrink-0" />} {label}
+      {Icon && <Icon size={16} strokeWidth={active ? 2.2 : 1.8} className="shrink-0" />}
+      <span className="flex-1">{label}</span>
+      {count > 0 && <span className="num grid h-5 min-w-5 place-items-center rounded-full bg-ink px-1.5 text-2xs font-semibold text-white">{count > 99 ? '99+' : count}</span>}
     </Link>
   )
 }
 
-function NavGroup({ item, path }) {
+function NavGroup({ item, path, badges = {} }) {
   const childActive = item.children.some((c) => isActive(path, c.href))
   const [open, setOpen] = useState(true)
   useEffect(() => { if (childActive) setOpen(true) }, [childActive])
@@ -211,7 +232,7 @@ function NavGroup({ item, path }) {
       </button>
       {open && (
         <div className="relative ml-[17px] space-y-px border-l border-edge pl-2.5">
-          {item.children.map((c) => <NavLink key={c.href} item={{ ...c, icon: null }} sub active={isActive(path, c.href)} />)}
+          {item.children.map((c) => <NavLink key={c.href} item={{ ...c, icon: null }} sub active={isActive(path, c.href)} count={badges[c.badge]} />)}
         </div>
       )}
     </div>

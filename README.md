@@ -5,6 +5,13 @@
 Catatan keuangan pribadi untuk masyarakat modern — pekerja kantoran, freelancer, pelaku usaha, mahasiswa.
 Semua pengguna wajib **daftar & masuk** (email + password) sebelum bisa mencatat.
 
+## Akses pengguna
+Pendaftar baru berstatus **menunggu** dan hanya melihat layar status sampai admin menekan *Accept*.
+Status (`pending`, `queued`, `active`, `blocked`, `frozen`) dijaga di database: akun yang tidak aktif tidak bisa
+membaca atau menulis data keuangan meski lewat API langsung, pengguna tidak bisa mengubah statusnya sendiri,
+dan hanya akun di tabel `mo_admins` yang bisa memanggil `mo_admin_set_status` atau mengirim pengumuman.
+Perubahan pada fitur admin hanya dilakukan dengan persetujuan pemilik (lihat `CLAUDE.md`).
+
 ## Arsitektur & rujukan
 MoneyOut meniru pola aplikasi keuangan pribadi yang sudah teruji puluhan tahun, bukan pola "dashboard kartu" generik:
 
@@ -37,6 +44,8 @@ MoneyOut meniru pola aplikasi keuangan pribadi yang sudah teruji puluhan tahun, 
 | ↳ Hutang & Piutang | Siapa meminjam berapa, jatuh tempo, progres cicilan, riwayat pembayaran |
 | ↳ Aset & Saldo | Saldo saat ini tiap dompet (uang yang sudah ada sebelum mencatat — mengubah saldo awal, bukan pemasukan) dan aset lain (properti, kendaraan, emas, investasi, deposito, barang berharga). Menghitung **kekayaan bersih** = dompet + simpanan + aset + piutang − hutang |
 | **Data Analyst** | Ringkasan bulanan, skor kesehatan (0–100), hasil analisis yang bisa disaring (risiko / temuan / peluang), aturan 50/30/20, peringatan anggaran |
+| **Notifikasi** | Semua pengguna: kabar status akun dari sistem + pengumuman admin, dengan penanda belum dibaca (ikon lonceng di HP). Admin: tab **Sistem** (mis. pendaftar baru) dan **Pengumuman** (tulis pesan untuk semua pengguna) |
+| **Admin** (khusus yatufht@gmail.com, wajib verifikasi ulang password, berlaku 30 menit) | **Purchase Order**: pendaftar baru — *Accept* (langsung bisa pakai), *Queue* (antre, sistem sibuk), *Block* (dengan alasan). **Order**: pelanggan yang sudah diterima — Accept, Queue, Block, dan *Freeze* (ditangguhkan, mis. belum bayar). **History**: log masuk/keluar/daftar/perubahan status semua pengguna, serta siapa yang aktif (≤10 menit), tidak aktif, diblokir, dibekukan |
 | **Laporan** | Grafik & tabel arus uang per bulan dalam setahun, rincian per kategori, ekspor CSV |
 | **Dompet** (sidebar) | Saldo per dompet, grafik saldo, transaksi dengan saldo berjalan, pindah dompet, cocokkan saldo, tambah/ubah dompet |
 | **Profil** | Klik foto/nama di kiri bawah (HP: lingkaran di kanan atas) |

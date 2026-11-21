@@ -25,6 +25,8 @@ export default function Providers({ children }) {
     signOut: () => backend.signOut(),
     updateProfile: async (v) => { const u = await backend.updateProfile(v); setUser(u); return u },
     changePassword: (p) => backend.changePassword(p),
+    verifyPassword: (p) => backend.verifyPassword(p),
+    refreshUser,
   }
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>
 }
