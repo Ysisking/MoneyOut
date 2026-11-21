@@ -88,9 +88,7 @@ npm run dev     # http://localhost:3200
 ```
 
 ## Menerbitkan
-- **GitHub Pages**: Settings → Pages → Source: *GitHub Actions*, lalu push ke `main`
-  (workflow `.github/workflows/pages.yml`). Untuk repo privat, GitHub Pages butuh paket berbayar.
-- **Cloudflare**: `npm run build` lalu tayangkan folder `out/` (sudah ada `wrangler.jsonc`).
+- **Cloudflare** (dipakai sekarang): terhubung ke repo GitHub, build otomatis setiap push ke `main` — `npm run build`, lalu `npx wrangler deploy` menayangkan folder `out/` (lihat `wrangler.jsonc`).
 - **Vercel / Netlify**: build command `npm run build`, output `out`.
 
 ## Struktur
