@@ -5,6 +5,7 @@ import { useData } from '@/components/DataProvider'
 import { MonthSwitcher, EmptyState, PageHeader, Segmented, SectionTitle, Progress } from '@/components/ui'
 import Insight, { LEVEL } from '@/components/Insight'
 import { analyze } from '@/lib/insights'
+import DeepAnalyst, { DeepToggle, useDeepSettings } from '@/components/DeepAnalyst'
 import { thisMonth, monthLabel, rupiah } from '@/lib/format'
 
 const GROUPS = [
@@ -18,12 +19,15 @@ export default function DataAnalyst() {
   const [month, setMonth] = useState(thisMonth())
   const [filter, setFilter] = useState('all')
   const a = useMemo(() => analyze(data, month), [data, month])
+  const [deep, setDeep] = useDeepSettings()
   const groups = GROUPS.filter((g) => filter === 'all' || filter === g.key)
 
   return (
     <div>
       <PageHeader title="Data Analyst" desc="Membaca catatanmu lalu menjelaskan apa yang terjadi, risikonya, dan langkah yang bisa diambil."
-        action={<MonthSwitcher value={month} onChange={setMonth} />} />
+        action={<><MonthSwitcher value={month} onChange={setMonth} /><DeepToggle on={deep.on} onChange={(on) => setDeep({ on })} /></>} />
+
+      {deep.on && <div className="mb-6"><DeepAnalyst settings={deep} update={setDeep} /></div>}
 
       {!a.hasData ? (
         <div className="panel"><EmptyState icon={Sparkles} title={`Belum ada data di ${monthLabel(month)}`} text="Catat pemasukan dan pengeluaran dulu. Analisis muncul otomatis." action={<button className="btn-primary" onClick={() => data.openTx({ kind: 'pemasukan' })}>Catat pemasukan</button>} /></div>
