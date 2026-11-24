@@ -11,6 +11,7 @@ import Insight from '@/components/Insight'
 import CategoryBars from '@/components/CategoryBars'
 import { BudgetList } from '@/components/Widgets'
 import ResetData from '@/components/ResetData'
+import { dueSoon } from '@/lib/bills'
 import { analyze } from '@/lib/insights'
 import { rupiah, thisMonth, shiftMonth, greeting, daysUntil, dateShort, todayISO, daysInMonth, monthShort } from '@/lib/format'
 import { total, ofKind, inMonth, byCategory, debtInfo, registerRows, budgetStatus, balanceSeries, netWorth } from '@/lib/stats'
@@ -55,6 +56,7 @@ export default function Dasbor() {
   const due = useMemo(() => debts.map((d) => ({ d, ...debtInfo(d, payments) }))
     .filter((x) => !x.done && x.d.due_date && daysUntil(x.d.due_date) <= 7)
     .sort((a, b) => a.d.due_date.localeCompare(b.d.due_date)), [debts, payments])
+  const billsDue = useMemo(() => dueSoon(data.bills, data.billPayments), [data.bills, data.billPayments])
   const attention = ai.risks.filter((r) => !/^Hutang ke/.test(r.title)).slice(0, 3)
   const empty = !transactions.length
   const today = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -128,10 +130,21 @@ export default function Dasbor() {
         </div>
 
         <div className="space-y-6">
-          {(due.length > 0 || attention.length > 0) && (
+          {(due.length > 0 || attention.length > 0 || billsDue.length > 0) && (
             <section className="panel p-5">
               <SectionTitle action={<Link href="/analisis/" className="text-sm font-medium text-sub hover:text-ink">Analisis</Link>}>Perlu perhatian</SectionTitle>
               <ul className="-my-1 divide-y divide-line">
+                {billsDue.map((x) => (
+                  <li key={x.bill.id}>
+                    <Link href="/tagihan/" className="flex gap-3 py-3">
+                      <CalendarClock size={16} className={`mt-[3px] shrink-0 ${x.days < 0 ? 'text-neg' : 'text-warn'}`} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-base font-medium">{x.bill.name}</span>
+                        <span className="block text-sm text-sub"><span className="num">{rupiah(x.bill.amount)}</span> · {x.days < 0 ? `terlambat ${-x.days} hari` : x.days === 0 ? 'jatuh tempo hari ini' : `${x.days} hari lagi`}</span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
                 {due.map(({ d, remaining }) => {
                   const n = daysUntil(d.due_date)
                   return (

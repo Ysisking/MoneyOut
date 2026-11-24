@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   LayoutGrid, ArrowDownLeft, ArrowUpRight, PiggyBank, HandCoins, BarChart3, SquarePen, Sparkles,
-  LogOut, Plus, Menu, X, ChevronDown, Gem, Bell, ShieldCheck,
+  LogOut, Plus, Menu, X, ChevronDown, Gem, Bell, ShieldCheck, Building2,
 } from 'lucide-react'
 import { useAuth } from '@/app/providers'
 import DataProvider, { useData } from './DataProvider'
@@ -14,6 +14,7 @@ import Logo from './Logo'
 import NotificationsProvider, { useNotifications } from './Notifications'
 import StatusScreen from './StatusScreen'
 import { rupiah } from '@/lib/format'
+import { dueSoon } from '@/lib/bills'
 
 export const INPUT_ITEMS = [
   { href: '/pemasukan/', label: 'Pemasukan', icon: ArrowDownLeft },
@@ -21,12 +22,14 @@ export const INPUT_ITEMS = [
   { href: '/simpanan/', label: 'Simpanan', icon: PiggyBank },
   { href: '/hutang-piutang/', label: 'Hutang & Piutang', icon: HandCoins },
   { href: '/aset/', label: 'Aset & Saldo', icon: Gem },
+  { href: '/tagihan/', label: 'Tagihan Terjadwal', badge: 'bills' },
 ]
 export const NAV = [
   { href: '/', label: 'Dasbor', icon: LayoutGrid },
   { href: '/input/', label: 'Input Variable', icon: SquarePen, children: INPUT_ITEMS },
   { href: '/analisis/', label: 'Data Analyst', icon: Sparkles },
   { href: '/laporan/', label: 'Laporan', icon: BarChart3 },
+  { href: '/instansi/', label: 'Sistem Tagihan', icon: Building2 },
   { href: '/notifikasi/', label: 'Notifikasi', icon: Bell, badge: 'unread' },
 ]
 export const ADMIN_ITEMS = [
@@ -69,9 +72,9 @@ export default function AppShell({ children }) {
 
 function Frame({ user, mode, path, children }) {
   const { signOut } = useAuth()
-  const { openTx, loading, error, reload } = useData()
+  const { openTx, loading, error, reload, bills, billPayments } = useData()
   const notif = useNotifications()
-  const badges = { unread: notif.unread, pending: notif.pending }
+  const badges = { unread: notif.unread, pending: notif.pending, bills: dueSoon(bills, billPayments).length }
   const [drawer, setDrawer] = useState(false)
   useEffect(() => setDrawer(false), [path])
 

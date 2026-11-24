@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { ChevronRight, Plus } from 'lucide-react'
+import { ChevronRight, Plus, CalendarClock } from 'lucide-react'
 import { useData } from '@/components/DataProvider'
 import { PageHeader, IconBubble } from '@/components/ui'
 import { INPUT_ITEMS } from '@/components/AppShell'
@@ -14,6 +14,7 @@ const DESC = {
   '/simpanan/': 'Tabungan, dana darurat, investasi, aset',
   '/hutang-piutang/': 'Pinjaman, cicilan, jatuh tempo',
   '/aset/': 'Saldo awal, rumah, kendaraan, emas, saham',
+  '/tagihan/': 'Ganti oli, salon, belanja bulanan, kirim ortu',
 }
 
 export default function InputVariable() {
@@ -26,13 +27,14 @@ export default function InputVariable() {
     '/simpanan/': [total(ofKind(m, 'simpanan')), 'bulan ini'],
     '/hutang-piutang/': [o.hutang, 'hutang aktif'],
     '/aset/': [netWorth(data).total, 'kekayaan bersih'],
+    '/tagihan/': [data.bills.filter((b) => !b.org_id && b.active).reduce((s, b) => s + Number(b.amount) / b.every_months, 0), 'per bulan'],
   }
   return (
     <div>
       <PageHeader title="Input Variable" desc={`Semua catatan keuangan, dikelompokkan per jenis. Angka untuk ${monthLabel(thisMonth())}.`}
         action={<button className="btn-primary" onClick={() => data.openTx()}><Plus size={16} /> Catat</button>} />
-      <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {INPUT_ITEMS.map(({ href, label, icon }) => (
+      <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {INPUT_ITEMS.map(({ href, label, icon = CalendarClock }) => (
           <Link key={href} href={href} className="panel group p-4 transition-colors hover:border-edge hover:bg-subtle">
             <div className="flex items-center justify-between"><IconBubble icon={icon} size="sm" /><ChevronRight size={16} className="text-faint transition group-hover:translate-x-0.5 group-hover:text-ink" /></div>
             <p className="mt-4 text-sm font-medium">{label}</p>

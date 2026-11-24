@@ -478,3 +478,105 @@ begin
   return new;
 end $$;
 revoke execute on function public.mo_handle_new_user() from public, anon, authenticated;
+
+-- =================================================================== SISTEM TAGIHAN (INSTANSI) & TAGIHAN TERJADWAL
+-- Profil instansi: kas terpisah dari keuangan pribadi. Bila kas minus, pengguna menalangi dari dompet pribadi.
+create table if not exists public.mo_orgs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  name text not null check (char_length(trim(name)) between 1 and 80),
+  unit text not null default '' check (char_length(unit) <= 80),   -- bidang / bagian
+  role text not null default '' check (char_length(role) <= 60),   -- jabatan pengguna
+  created_at timestamptz not null default now()
+);
+create table if not exists public.mo_org_members (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  org_id uuid not null references public.mo_orgs (id) on delete cascade,
+  name text not null check (char_length(trim(name)) between 1 and 80),
+  role text not null default '' check (char_length(role) <= 60),
+  phone text not null default '' check (char_length(phone) <= 20),
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+create table if not exists public.mo_bills (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  org_id uuid references public.mo_orgs (id) on delete cascade,             -- null = tagihan pribadi
+  name text not null check (char_length(trim(name)) between 1 and 80),
+  kind text not null check (kind in ('pengeluaran', 'simpanan', 'iuran', 'keluar')),
+  category text not null default '' check (char_length(category) <= 40),
+  amount numeric(15, 2) not null check (amount > 0),
+  day int not null check (day between 1 and 31),
+  every_months int not null default 1 check (every_months in (1, 2, 3, 6, 12)),
+  start_month text not null check (start_month ~ '^[0-9]{4}-[0-9]{2}$'),
+  account_id uuid references public.mo_accounts (id) on delete set null,
+  active boolean not null default true,
+  note text not null default '' check (char_length(note) <= 200),
+  created_at timestamptz not null default now()
+);
+create table if not exists public.mo_org_entries (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  org_id uuid not null references public.mo_orgs (id) on delete cascade,
+  kind text not null check (kind in ('masuk', 'keluar')),
+  source text not null default 'manual' check (source in ('manual', 'iuran', 'tagihan', 'talangan', 'pengembalian')),
+  category text not null default '' check (char_length(category) <= 40),
+  amount numeric(15, 2) not null check (amount > 0),
+  date date not null default current_date,
+  note text not null default '' check (char_length(note) <= 200),
+  member_id uuid references public.mo_org_members (id) on delete set null,
+  bill_id uuid references public.mo_bills (id) on delete set null,
+  period text check (period ~ '^[0-9]{4}-[0-9]{2}$'),
+  linked_tx_id uuid references public.mo_transactions (id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create table if not exists public.mo_bill_payments (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  bill_id uuid not null references public.mo_bills (id) on delete cascade,
+  period text not null check (period ~ '^[0-9]{4}-[0-9]{2}$'),
+  member_id uuid references public.mo_org_members (id) on delete cascade,
+  amount numeric(15, 2) not null default 0 check (amount >= 0),             -- 0 = dilewati
+  tx_id uuid references public.mo_transactions (id) on delete set null,
+  entry_id uuid references public.mo_org_entries (id) on delete set null,
+  date date not null default current_date,
+  created_at timestamptz not null default now()
+);
+create index if not exists mo_orgs_user on public.mo_orgs (user_id);
+create index if not exists mo_org_members_org on public.mo_org_members (org_id);
+create index if not exists mo_org_entries_org on public.mo_org_entries (org_id, date desc);
+create index if not exists mo_bills_user on public.mo_bills (user_id);
+create index if not exists mo_bill_payments_bill on public.mo_bill_payments (bill_id, period);
+
+-- Pemilik catatan = pengguna aktif; rujukan ke instansi/tagihan/anggota/transaksi harus miliknya sendiri.
+create or replace function public.mo_owns_org(p uuid) returns boolean language sql stable security definer set search_path = public as $$
+  select p is null or exists (select 1 from public.mo_orgs where id = p and user_id = auth.uid());
+$$;
+create or replace function public.mo_owns_bill(p uuid) returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.mo_bills where id = p and user_id = auth.uid());
+$$;
+create or replace function public.mo_owns_member(p uuid) returns boolean language sql stable security definer set search_path = public as $$
+  select p is null or exists (select 1 from public.mo_org_members where id = p and user_id = auth.uid());
+$$;
+create or replace function public.mo_owns_tx(p uuid) returns boolean language sql stable security definer set search_path = public as $$
+  select p is null or exists (select 1 from public.mo_transactions where id = p and user_id = auth.uid());
+$$;
+revoke all on function public.mo_owns_org(uuid), public.mo_owns_bill(uuid), public.mo_owns_member(uuid), public.mo_owns_tx(uuid) from public, anon;
+grant execute on function public.mo_owns_org(uuid), public.mo_owns_bill(uuid), public.mo_owns_member(uuid), public.mo_owns_tx(uuid) to authenticated;
+
+do $$
+declare t text; extra text;
+begin
+  foreach t in array array['mo_orgs', 'mo_org_members', 'mo_org_entries', 'mo_bills', 'mo_bill_payments'] loop
+    extra := case t
+      when 'mo_org_members' then ' and public.mo_owns_org(org_id)'
+      when 'mo_org_entries' then ' and public.mo_owns_org(org_id) and public.mo_owns_member(member_id) and public.mo_owns_tx(linked_tx_id) and (bill_id is null or public.mo_owns_bill(bill_id))'
+      when 'mo_bills' then ' and public.mo_owns_org(org_id)'
+      when 'mo_bill_payments' then ' and public.mo_owns_bill(bill_id) and public.mo_owns_member(member_id) and public.mo_owns_tx(tx_id)'
+      else '' end;
+    execute format('alter table public.%I enable row level security', t);
+    execute format('drop policy if exists %I on public.%I', t || '_own', t);
+    execute format('create policy %I on public.%I for all to authenticated using (user_id = (select auth.uid()) and (select public.mo_is_active())) with check (user_id = (select auth.uid()) and (select public.mo_is_active())%s)', t || '_own', t, extra);
+  end loop;
+end $$;
