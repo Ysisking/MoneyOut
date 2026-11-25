@@ -5,6 +5,7 @@ import { useData } from './DataProvider'
 import { IconBubble } from './ui'
 import { iconFor } from '@/lib/categories'
 import { rupiah, todayISO } from '@/lib/format'
+import { isFromOrderBook, stripOrderBook } from '@/lib/orderbook'
 
 const PAGE = 50
 
@@ -50,7 +51,8 @@ export default function Register({ rows, showBalance = false, showAccount = true
             {g.items.map((r) => {
               const isT = r.type === 'transfer'
               const Icon = isT ? ArrowRightLeft : iconFor(r.kind, r.category)
-              const title = isT ? r.category : r.note || r.category
+              const fromOB = !isT && isFromOrderBook(r.note)
+              const title = isT ? r.category : stripOrderBook(r.note) || r.category
               const meta = [
                 dense && dayLabel(r.date),
                 !isT && r.note && r.category,
@@ -64,7 +66,10 @@ export default function Register({ rows, showBalance = false, showAccount = true
                   <button onClick={() => open(r)} className="group flex w-full items-center gap-3.5 border-b border-line px-5 py-3 text-left transition-colors last:border-0 hover:bg-subtle">
                     <IconBubble icon={Icon} />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-base font-medium">{title}</span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate text-base font-medium">{title}</span>
+                        {fromOB && <span className="shrink-0 rounded border border-line px-1 text-[10px] font-semibold uppercase tracking-wide text-sub" title="Dikirim otomatis dari OrderBook">OrderBook</span>}
+                      </span>
                       <span className="block truncate text-sm text-sub">{meta.join(' · ') || KIND_LABEL[r.kind]}</span>
                     </span>
                     <span className="text-right">

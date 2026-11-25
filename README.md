@@ -52,6 +52,12 @@ MoneyOut meniru pola aplikasi keuangan pribadi yang sudah teruji puluhan tahun, 
 | **Dompet** (sidebar) | Saldo per dompet, grafik saldo, transaksi dengan saldo berjalan, pindah dompet, cocokkan saldo, tambah/ubah dompet |
 | **Profil** | Klik foto/nama di kiri bawah (HP: lingkaran di kanan atas) |
 
+### Pemasukan dari OrderBook
+Pengguna OrderBook (https://orderbook.gamma-tau.workers.dev) bisa menghubungkan akunnya ke MoneyOut dengan **email yang sama**
+(OrderBook → Pengaturan → Aplikasi terhubung). Order yang selesai lalu tercatat otomatis sebagai **Pemasukan** (rekap bulanan seperti gaji, atau per order).
+Transaksi ini bercatatan awalan `OrderBook · ` (lihat `lib/orderbook.js`), diberi label **ORDERBOOK** di daftar, dan tampil **hanya-baca**:
+perubahan dilakukan dari OrderBook, karena sinkron berikutnya menyamakan isinya. Tidak ada perubahan skema database.
+
 Tombol **Catat transaksi** selalu ada (sidebar di desktop, tombol bulat di tengah bawah di HP; pintasan `N`) dengan pilihan
 Pengeluaran / Pemasukan / Simpanan / Pindah. Kategori sendiri bisa ditambahkan langsung dari form (**+ Baru**).
 

@@ -1,12 +1,13 @@
 'use client'
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { ExternalLink, Plus } from 'lucide-react'
 import { Modal, ErrorText, Segmented } from './ui'
 import AmountInput from './AmountInput'
 import AccountSelect from './AccountPicker'
 import { useData } from './DataProvider'
 import { KINDS, categoriesFor } from '@/lib/categories'
-import { todayISO } from '@/lib/format'
+import { rupiah, todayISO } from '@/lib/format'
+import { ORDERBOOK_WEB, isFromOrderBook, stripOrderBook } from '@/lib/orderbook'
 
 const TYPES = [
   { value: 'pengeluaran', label: 'Pengeluaran' },
@@ -18,6 +19,38 @@ const LAST = 'moneyout:lastAccount'
 const lastAccount = () => { try { return localStorage.getItem(LAST) } catch { return null } }
 
 export default function TxForm({ initial, onClose }) {
+  // Pemasukan dari OrderBook dikelola OrderBook: tampil hanya-baca (perubahan di sini akan ditimpa sinkron berikutnya).
+  if (initial.tx && isFromOrderBook(initial.tx.note)) return <OrderBookTx tx={initial.tx} onClose={onClose} />
+  return <TxEditor initial={initial} onClose={onClose} />
+}
+
+function OrderBookTx({ tx, onClose }) {
+  const { accounts } = useData()
+  const acc = accounts.find((a) => a.id === tx.account_id)?.name
+  const rows = [['Kategori', tx.category], ['Tanggal', new Date(tx.date + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })], ['Dompet', acc || '—'], ['Catatan', stripOrderBook(tx.note)]]
+  return (
+    <Modal open onClose={onClose} title="Pemasukan dari OrderBook"
+      footer={<>
+        <button type="button" className="btn-secondary" onClick={onClose}>Tutup</button>
+        <a className="btn-primary" href={`${ORDERBOOK_WEB}/riwayat`} target="_blank" rel="noreferrer">Buka OrderBook <ExternalLink size={14} /></a>
+      </>}>
+      <div className="space-y-5">
+        <p className="num text-3xl font-semibold text-pos">+{rupiah(Number(tx.amount))}</p>
+        <dl className="divide-y divide-line border-y border-line text-sm">
+          {rows.map(([k, v]) => (
+            <div key={k} className="grid grid-cols-[7rem_1fr] gap-3 py-2.5"><dt className="text-sub">{k}</dt><dd className="min-w-0 break-words">{v}</dd></div>
+          ))}
+        </dl>
+        <p className="rounded-lg bg-subtle p-3 text-sm text-sub">
+          Transaksi ini dikirim otomatis dari akun OrderBook Anda (email yang sama). Untuk mengubah atau menghapusnya, ubah order di OrderBook
+          (mis. pulihkan dari Riwayat atau ubah harganya), lalu MoneyOut ikut menyesuaikan. Pengaturan sinkron ada di OrderBook → Pengaturan → Aplikasi terhubung.
+        </p>
+      </div>
+    </Modal>
+  )
+}
+
+function TxEditor({ initial, onClose }) {
   const { categories, balances, save, remove } = useData()
   const tx = initial.tx, tr = initial.transfer
   const editing = !!(tx || tr)
