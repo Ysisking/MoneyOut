@@ -7,7 +7,7 @@ export const metadata = {
   description: 'Catatan keuangan pribadi: pemasukan, pengeluaran, simpanan, hutang dan piutang.',
   authors: [{ name: 'gammaproject' }],
   creator: 'gammaproject',
-  icons: { icon: BASE + '/icon.svg' },
+  icons: { icon: BASE + '/ikon-dompet.svg' },
 }
 export const viewport = { themeColor: "#0E7A5F", width: 'device-width', initialScale: 1 }
 
